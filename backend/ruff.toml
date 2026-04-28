@@ -1,0 +1,26 @@
+line-length = 88           # max line length (Black standard)
+indent-width = 4           # 4 spaces per level (PEP 8 standard)
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes — unused imports, undefined names
+  "I",   # isort — import sorting
+  "UP",  # pyupgrade — modernize syntax
+  "B",   # bugbear — common bugs and gotchas
+]
+ignore = ["E501"]   # ignore line-too-long, let formatter handle it
+fixable = ["ALL"]   # auto-fix anything that can be safely fixed
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]  # allow unused imports in __init__.py (re-exports)
+
+[lint.isort]
+force-single-line = false    # keep related imports grouped
+combine-as-imports = true    # combine "import x" and "import x as y"
+
+[format]
+quote-style = "double"            # consistent double quotes
+indent-style = "space"            # spaces over tabs
+skip-magic-trailing-comma = false # respect trailing commas
