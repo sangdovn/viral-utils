@@ -24,10 +24,11 @@ def _inpaint_frame(
     w, h = metadata.width, metadata.height
 
     for b in boxes:
-        ex1 = max(0, b.x1 - video_config.inpaint_expand)
-        ey1 = max(0, b.y1 - video_config.inpaint_expand)
-        ex2 = min(w, b.x2 + video_config.inpaint_expand)
-        ey2 = min(h, b.y2 + video_config.inpaint_expand)
+        expand = video_config.inpaint_expand
+        ex1 = max(0, b.x1 - expand)
+        ey1 = max(0, b.y1 - expand)
+        ex2 = min(w, b.x2 + expand)
+        ey2 = min(h, b.y2 + expand)
 
         cx1 = max(b.x1, ex1)
         cy1 = max(b.y1, ey1)
