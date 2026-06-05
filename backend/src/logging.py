@@ -1,24 +1,19 @@
 import logging
 import sys
 
-from src.config import settings
+from src.config import get_settings
+
+_SILENCED = ("google_genai", "httpx", "httpcore", "urllib3", "aiosqlite")
 
 
 def setup_logging() -> None:
-    logging.getLogger().handlers.clear()
-
     logging.basicConfig(
-        level=settings.log_level.upper(),
-        format="[%(levelname)s] %(message)s",
+        level=get_settings().log_level.upper(),
+        format="%(levelname)-8s %(asctime)s %(name)s:%(lineno)d - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
         stream=sys.stdout,
+        force=True,
     )
 
-    # Suppress noisy logs
-    for logger_name in ["google_genai", "httpx", "httpcore"]:
-        logger = logging.getLogger(logger_name)
-        logger.disabled = True
-        logger.propagate = False
-
-
-def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+    for name in _SILENCED:
+        logging.getLogger(name).propagate = False
