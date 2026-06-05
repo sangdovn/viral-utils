@@ -32,3 +32,6 @@ dist-ssr/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Http client
+*.local.http
