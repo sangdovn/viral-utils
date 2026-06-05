@@ -1,54 +1,102 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+import shutil
+import threading
+from collections.abc import Generator
 
-from src.llm.client import LLMClient
-from src.video import service as video_service
-from src.video.config import (
-    VideoConfig,
-    reset_config,
-    update_video_config,
+from fastapi import APIRouter, Depends
+from fastapi.sse import EventSourceResponse
+
+from src.config import settings
+from src.inpainting.engine import InpaintEngineProtocol
+from src.inpainting.schemas import InpaintConfig
+from src.ocr.engine import OcrEngine
+from src.ocr.schemas import OcrConfig
+from src.schemas import SSEEvent
+from src.subtitle.schemas import SubtitleConfig
+from src.video import service
+from src.video.dependencies import (
+    get_inpaint_config,
+    get_inpaint_engine,
+    get_ocr_config,
+    get_ocr_engine,
+    get_subtitle_config,
+    get_video_engine,
 )
-from src.video.dependencies import get_llm_client
-from src.video.exceptions import InpaintingError, TranslationError
-from src.video.schemas import (
-    InpaintAllResponse,
-    InpaintRequest,
-    InpaintResponse,
-    VideoConfigUpdate,
-)
+from src.video.engine import VideoEngineProtocol
+from src.video.schemas import ProcessVideosRequest
 
-router = APIRouter(prefix="/video", tags=["video"])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/video")
+
+_cancel = threading.Event()
 
 
-@router.put("/config", response_model=VideoConfig)
-def update_config(new_config: VideoConfigUpdate):
-    updated_config = update_video_config(new_config)
-    return updated_config
+@router.post(path="/process/stream", response_class=EventSourceResponse)
+def process_stream(
+    request: ProcessVideosRequest,
+    video_engine: VideoEngineProtocol = Depends(get_video_engine),
+    ocr_engine: OcrEngine = Depends(get_ocr_engine),
+    ocr_config: OcrConfig = Depends(get_ocr_config),
+    subtitle_config: SubtitleConfig = Depends(get_subtitle_config),
+    inpaint_engine: InpaintEngineProtocol = Depends(get_inpaint_engine),
+    inpaint_config: InpaintConfig = Depends(get_inpaint_config),
+) -> Generator[SSEEvent]:
+    _cancel.clear()
+    yield from service.process(
+        request=request,
+        video_engine=video_engine,
+        ocr_engine=ocr_engine,
+        ocr_config=ocr_config,
+        subtitle_config=subtitle_config,
+        inpaint_engine=inpaint_engine,
+        inpaint_config=inpaint_config,
+        llm_models=request.llm_models,
+        cancel=_cancel,
+    )
 
 
-@router.post("/config/reset", response_model=VideoConfig)
-def reset_config_route():
-    return reset_config()
+@router.post(path="/process/stream/test", response_class=EventSourceResponse)
+def process_stream_test(
+    request: ProcessVideosRequest,
+    video_engine: VideoEngineProtocol = Depends(get_video_engine),
+    ocr_engine: OcrEngine = Depends(get_ocr_engine),
+    ocr_config: OcrConfig = Depends(get_ocr_config),
+    subtitle_config: SubtitleConfig = Depends(get_subtitle_config),
+    inpaint_engine: InpaintEngineProtocol = Depends(get_inpaint_engine),
+    inpaint_config: InpaintConfig = Depends(get_inpaint_config),
+) -> Generator[SSEEvent]:
+    _cancel.clear()
+    request.in_dir = request.in_dir + "/test"
+    request.out_dir = request.out_dir + "/test"
+    yield from service.process(
+        request=request,
+        video_engine=video_engine,
+        ocr_engine=ocr_engine,
+        ocr_config=ocr_config,
+        subtitle_config=subtitle_config,
+        inpaint_engine=inpaint_engine,
+        inpaint_config=inpaint_config,
+        llm_models=request.llm_models,
+        cancel=_cancel,
+    )
 
 
-@router.post("/inpaint", response_model=InpaintResponse)
-async def inpaint(
-    req: InpaintRequest,
-    llm_client: LLMClient = Depends(get_llm_client),
-) -> InpaintResponse:
-    try:
-        return await video_service.inpaint_video(
-            input_path=req.input_path,
-            output_path=req.output_path,
-            llm_client=llm_client,
-        )
-    except InpaintingError:
-        raise HTTPException(status_code=500, detail="Inpainting failed")
-    except TranslationError:
-        raise HTTPException(status_code=500, detail="Translation failed")
+@router.delete("/process/stream")
+def cancel_process_stream():
+    _cancel.set()
+    return {"status": "cancelled"}
 
 
-@router.post("/inpaint_all", response_model=InpaintAllResponse)
-async def inpaint_all(
-    llm_client: LLMClient = Depends(get_llm_client),
-) -> InpaintAllResponse:
-    return await video_service.inpaint_all_videos(llm_client=llm_client)
+@router.delete("/cache/clear")
+def clear_cache_route():
+    for p in settings.cache_dir.glob("*"):
+        try:
+            if p.is_dir():
+                shutil.rmtree(p)
+            elif p.is_file():
+                p.unlink()
+        except Exception as e:
+            logger.error(e)
+
+    return {"status": "done"}

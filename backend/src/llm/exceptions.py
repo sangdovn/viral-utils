@@ -14,6 +14,10 @@ class EmptyResponseError(LLMError):
     """Provider returned a result but content was None/empty."""
 
 
+class LLMAllModelsFailed(LLMError):
+    """All rotation models are failed to complete."""
+
+
 def normalize_error(e: Exception) -> LLMError:
     """Map provider-specific exceptions to our own error types."""
     code = getattr(e, "status_code", None) or getattr(e, "code", None)
