@@ -8,7 +8,7 @@ from pathlib import Path
 from src.config import get_settings
 from src.ocr.engine import OcrEngine
 from src.ocr.schemas import OcrConfig
-from src.schemas import EventStatus, SSEEvent
+from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle.schemas import Subtitle
 from src.video.engine import VideoEngineProtocol
 

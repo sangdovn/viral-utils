@@ -6,7 +6,7 @@ from pathlib import Path
 
 from src.inpainting.engine import InpaintEngineProtocol
 from src.inpainting.schemas import InpaintConfig
-from src.schemas import EventStatus, SSEEvent
+from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle.schemas import Subtitle
 from src.video.engine import VideoEngineProtocol
 

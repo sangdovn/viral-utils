@@ -10,7 +10,7 @@ from src.llm.schemas import LLMModel
 from src.ocr import service as ocr_service
 from src.ocr.engine import OcrEngine
 from src.ocr.schemas import OcrConfig
-from src.schemas import EventStatus, SSEEvent
+from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle import service as subtitle_service
 from src.subtitle.schemas import Subtitle, SubtitleConfig
 from src.video.constants import ALLOWED_EXTENSIONS

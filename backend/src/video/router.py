@@ -11,7 +11,7 @@ from src.inpainting.engine import InpaintEngineProtocol
 from src.inpainting.schemas import InpaintConfig
 from src.ocr.engine import OcrEngine
 from src.ocr.schemas import OcrConfig
-from src.schemas import SSEEvent
+from src.shared.schemas import SSEEvent
 from src.subtitle.schemas import SubtitleConfig
 from src.video import service
 from src.video.dependencies import (
