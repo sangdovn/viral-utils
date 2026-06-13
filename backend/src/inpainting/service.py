@@ -4,9 +4,9 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 
+from src.common.schemas import EventStatus, SSEEvent
 from src.inpainting.engine import InpaintEngineProtocol
 from src.inpainting.schemas import InpaintConfig
-from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle.schemas import Subtitle
 from src.video.engine import VideoEngineProtocol
 
@@ -30,7 +30,7 @@ def inpaint(
 
     if not subtitles:
         video_engine.copy(video_path, out_path)
-        yield SSEEvent(status=EventStatus.DONE)
+        yield SSEEvent(status=EventStatus.COMPLETED, message="No subtitles found")
         return
 
     encoder = video_engine.get_encoder(path=video_path, out_path=out_path)
@@ -51,9 +51,11 @@ def inpaint(
                 data = engine.inpaint(frame.data, bboxes=[s.bbox for s in active])
 
             encoder.stdin.write(data.tobytes())
+
             yield SSEEvent(
-                status=EventStatus.PROGRESS,
-                message=f"Inpaint: {frame.index}/{meta.total_frames} frames",
+                status=EventStatus.PROCESSING,
+                message=f"Inpainting {frame.index}/{meta.total_frames} frames",
+                progress=int((frame.index / meta.total_frames) * 100),
             )
 
             # Throttle to keep device cool
@@ -69,5 +71,4 @@ def inpaint(
             )
             raise RuntimeError(f"ffmpeg encode failed: {err}")
 
-    # yield SSEEvent(status=EventStatus.DONE, message=str(out_path))
-    logger.info("Inpainted video - file=%s", video_path.name)
+    yield SSEEvent(status=EventStatus.COMPLETED, message=str(out_path))
