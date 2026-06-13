@@ -1,7 +1,5 @@
 import asyncio
-import json
 import logging
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -49,7 +47,6 @@ class TikHubClient:
             async with httpx.AsyncClient() as client:
                 res = await client.get(url=url, headers=headers, params=params)
                 res.raise_for_status()
-                Path("res_raw").write_text(json.dumps(res.json()))
                 return UserPostVideosResponse.model_validate(res.json())
         except httpx.HTTPStatusError as e:
             raise TikHubError(e.response.text) from e
