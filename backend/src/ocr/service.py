@@ -5,10 +5,10 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 
+from src.common.schemas import EventStatus, SSEEvent
 from src.config import get_settings
 from src.ocr.engine import OcrEngine
 from src.ocr.schemas import OcrConfig
-from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle.schemas import Subtitle
 from src.video.engine import VideoEngineProtocol
 
@@ -34,7 +34,7 @@ def extract(
     if cache.exists():
         data = cache.read_text(encoding="utf-8")
         logger.debug("Loaded OCRed subtitles from cache")
-        yield SSEEvent(status=EventStatus.DONE)
+        yield SSEEvent(status=EventStatus.COMPLETED)
         return [Subtitle(**s) for s in json.loads(data)]
 
     # If not cache run ocr with sampling interval
@@ -70,8 +70,9 @@ def extract(
         scanned += 1
 
         yield SSEEvent(
-            status=EventStatus.PROGRESS,
-            message=f"OCR: {f.index}/{meta.total_frames} frames",
+            status=EventStatus.PROCESSING,
+            message=f"OCRed: {f.index}/{meta.total_frames} frames",
+            progress=int(f.index / meta.total_frames) * 100,
         )
 
     logger.debug("OCRed %s frames", scanned)
