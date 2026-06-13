@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+  "aiosqlite>=0.22.1",
+  "deep-translator>=1.11.4",
   "fastapi[standard]>=0.136.0",
   "google-genai>=1.70.0",
   "numpy>=2.4.3",
@@ -12,9 +14,17 @@ dependencies = [
   "openai>=2.30.0",
   "opencv-python-headless>=4.13.0.92",
   "paddleocr>=3.4.0",
-  "python-dotenv>=1.2.2",
   "send2trash>=2.1.0",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
+
+
 [tool.fastapi]
 entrypoint = "src.main:app"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
