@@ -15,3 +15,4 @@ class SSEEvent(BaseModel):
     status: EventStatus
     message: str | None = None
     progress: int | None = None
+    data: dict | None = None
