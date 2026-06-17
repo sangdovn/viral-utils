@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS videos(
     duration INTEGER,
     urls TEXT,
     is_downloaded INTEGER DEFAULT 0 CHECK (is_downloaded IN (0, 1)),
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
     created_at INTEGER NOT NULL DEFAULT (unixepoch()),
     updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
