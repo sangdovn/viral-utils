@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from src.rate_limit.limit import RateLimiter
 from src.tikhub.constants import DEFAULT_HEADERS, TIKHUB_BASE_URL
-from src.tikhub.exceptions import TikHubError, TikHubValidationError
+from src.tikhub.exceptions import TikHubError
 from src.tikhub.schemas import UserPostVideosResponse
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class TikHubClient:
         except httpx.RequestError as e:
             raise TikHubError(f"Request failed - {e}") from e
         except ValidationError as e:
-            raise TikHubValidationError(f"Response validation failed: {e}") from e
+            raise TikHubError(f"Response validation failed: {e}") from e
         except Exception as e:
             raise TikHubError(f"Unknown error {e}") from e
 
