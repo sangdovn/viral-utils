@@ -30,7 +30,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    pass
+    system_id: int | None = None
 
 
 class UserUpdate(BaseModel):
@@ -47,12 +47,14 @@ class UserUpdate(BaseModel):
 
 class User(UserBase):
     id: int
+    system_id: int | None = None
     created_at: int
     updated_at: int
 
 
 class UserResponse(UserBase):
     id: int
+    system_id: int
 
 
 class VideoBase(BaseModel):

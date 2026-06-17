@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users(
     micro_niche TEXT,
     note TEXT,
     last_fetched INTEGER,
+    system_id INTEGER REFERENCES systems(id),
     created_at INTEGER NOT NULL DEFAULT (unixepoch()),
     updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );

@@ -25,7 +25,7 @@ class PlatformBase(BaseModel):
 
 class Platform(BaseModel):
     id: int
-    system_id: int
+    system_id: int | None = None
     created_at: int
     updated_at: int
 
@@ -43,4 +43,4 @@ class PlatformUpdate(BaseModel):
 
 class PlatformResponse(PlatformBase):
     id: int
-    system_id: int
+    system_id: int | None = None
