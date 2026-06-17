@@ -5,15 +5,16 @@ from aiosqlite import Connection
 from src.douyin.queries import (
     INSERT_USER,
     INSERT_VIDEO,
-    SELECT_ACTIVE_USERS,
-    SELECT_AVAILABLE_VIDEOS,
+    SELECT_SYSTEM_NAME_BY_VIDEO_ID,
     SELECT_USER_BY_ID,
     SELECT_USER_BY_SEC_UID,
     SELECT_USERS,
+    SELECT_USERS_TO_FETCH,
     SELECT_VIDEO_BY_AWEME_ID,
     SELECT_VIDEO_BY_ID,
     SELECT_VIDEOS,
     SELECT_VIDEOS_BY_USER_ID,
+    SELECT_VIDEOS_TO_DOWNLOAD,
     UPDATE_USER_BY_ID,
     UPDATE_VIDEO_BY_ID,
     UPSERT_USER,
@@ -43,8 +44,8 @@ async def select_users(db: Connection) -> list[User]:
     return [User.model_validate(dict(row)) for row in rows]
 
 
-async def select_active_users(db: Connection) -> list[User]:
-    cur = await db.execute(SELECT_ACTIVE_USERS)
+async def select_users_to_fetch(db: Connection) -> list[User]:
+    cur = await db.execute(SELECT_USERS_TO_FETCH)
     rows = await cur.fetchall()
     return [User.model_validate(dict(row)) for row in rows]
 
@@ -97,8 +98,8 @@ async def select_videos(db: Connection) -> list[Video]:
     return [Video.model_validate(dict(row)) for row in rows]
 
 
-async def select_available_videos(db: Connection) -> list[Video]:
-    cur = await db.execute(SELECT_AVAILABLE_VIDEOS)
+async def select_videos_to_download(db: Connection) -> list[Video]:
+    cur = await db.execute(SELECT_VIDEOS_TO_DOWNLOAD)
     rows = await cur.fetchall()
     return [Video.model_validate(dict(row)) for row in rows]
 
@@ -119,6 +120,21 @@ async def select_videos_by_user_id(user_id: int, db: Connection) -> list[Video]:
     cur = await db.execute(SELECT_VIDEOS_BY_USER_ID, {"user_id": user_id})
     rows = await cur.fetchall()
     return [Video.model_validate(dict(row)) for row in rows]
+
+
+# ==============================================================================
+# CORE
+# ==============================================================================
+
+
+async def select_system_name_and_user_translated_name_by_video_id(
+    video_id: int, db: Connection
+) -> tuple[str | None, str | None]:
+    cur = await db.execute(SELECT_SYSTEM_NAME_BY_VIDEO_ID, {"id": video_id})
+    row = await cur.fetchone()
+    if row is None:
+        return None, None
+    return row["name"], row["translated_name"]
 
 
 async def insert_video(video: VideoCreate, db: Connection) -> Video | None:

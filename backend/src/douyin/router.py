@@ -4,13 +4,12 @@ from collections.abc import AsyncGenerator
 from fastapi import APIRouter
 from fastapi.sse import EventSourceResponse
 
-from src.common.schemas import EventStatus, SSEEvent
 from src.database import DbConnection
 from src.douyin import service
-from src.douyin.exceptions import FetchUserVideosError, InsertUserError, UserExistsError
 from src.douyin.schemas import UserCreate
+from src.exceptions import AppException
+from src.shared.schemas import EventStatus, SSEEvent
 from src.tikhub.dependencies import TikHubClientDep
-from src.tikhub.exceptions import TikHubError
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +29,12 @@ async def create_user_videos(
             tikhub=tikhub,
         ):
             yield event
-        return
-    except TikHubError as e:
-        logger.error("TikHub error - %s - sec_uid=%s", e, request.sec_uid)
-    except FetchUserVideosError as e:
-        logger.error("Fetch error - %s - sec_uid=%s", e, request.sec_uid)
-    except (InsertUserError, UserExistsError) as e:
-        logger.error("Database error - %s - sec_uid=%s", e, request.sec_uid)
+    except AppException as e:
+        logger.error(e)
+        yield SSEEvent(status=EventStatus.FAILED, message=e.message)
     except Exception as e:
-        logger.error("Unexpected error - %s - sec_uid=%s", e, request.sec_uid)
-    yield SSEEvent(status=EventStatus.FAILED, message="Failed to create user videos")
+        logger.exception(e)
+        yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
 
 
 @router.get("/fetch_latest_videos")
@@ -50,22 +45,37 @@ async def fetch_latest_videos(
     try:
         async for event in service.fetch_latest_videos(db=db, tikhub=tikhub):
             yield event
-        return
+    except AppException as e:
+        logger.error(e)
+        yield SSEEvent(status=EventStatus.FAILED, message=e.message)
     except Exception as e:
-        logger.error("Unexpected error - %s", e)
-    yield SSEEvent(status=EventStatus.FAILED, message="Failed to fetch latest videos")
+        logger.exception(e)
+        yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
 
 
 @router.get("/download_latest_videos")
 async def download_latest_videos(db: DbConnection):
     try:
-        # TODO: add fetch latest video here
         async for event in service.download_latest_videos(db=db):
             yield event
-        return
+    except AppException as e:
+        logger.error(e)
+        yield SSEEvent(status=EventStatus.FAILED, message=e.message)
     except Exception as e:
-        logger.error("Unexpected error - %s", e)
-    yield SSEEvent(
-        status=EventStatus.FAILED,
-        message="Failed to download latest videos",
-    )
+        logger.exception(e)
+        yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
+
+
+@router.get("/fetch_and_download_latest_videos")
+async def fetch_and_download_latest_videos(db: DbConnection, tikhub: TikHubClientDep):
+    try:
+        async for event in service.fetch_latest_videos(db=db, tikhub=tikhub):
+            yield event
+        async for event in service.download_latest_videos(db=db):
+            yield event
+    except AppException as e:
+        logger.error(e)
+        yield SSEEvent(status=EventStatus.FAILED, message=e.message)
+    except Exception as e:
+        logger.exception(e)
+        yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")

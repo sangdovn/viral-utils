@@ -125,7 +125,7 @@ async def migrate_videos(new_db: Connection, old_db: Connection):
                 video=VideoCreate(
                     aweme_id=video_id,
                     title=data["title"],
-                    t_title=data["translated_title"],
+                    translated_title=data["translated_title"],
                     create_time=create_time,
                     digg_count=data["digg_count"],
                     duration=data["duration"],

@@ -9,7 +9,7 @@ from typing import Any
 from aiosqlite import Connection
 from fastapi.concurrency import run_in_threadpool
 
-from src.common.schemas import EventStatus, SSEEvent
+from src.config import settings
 from src.douyin import repository as repo
 from src.douyin.exceptions import (
     FetchUserVideosError,
@@ -27,6 +27,7 @@ from src.douyin.schemas import (
     VideoUpdate,
 )
 from src.download import service as download_service
+from src.shared.schemas import EventStatus, SSEEvent
 from src.tikhub.client import TikHubClient
 from src.tikhub.exceptions import TikHubError
 from src.tikhub.schemas import AwemeItem
@@ -100,12 +101,12 @@ async def _insert_user(
     db: Connection,
 ) -> User:
     name = fetched_user["name"]
-    t_name = await _translate_text(name)
+    translated_name = await _translate_text(name)
     saved = await repo.insert_user(
         user=user.model_copy(
             update={
                 "name": name,
-                "t_name": t_name,
+                "translated_name": translated_name,
                 "last_fetched": int(datetime.now().timestamp()),
             }
         ),
@@ -123,14 +124,14 @@ async def _insert_videos(
     db: Connection,
 ) -> AsyncGenerator[SSEEvent]:
     total = len(videos)
-    for i, (video, t_title) in enumerate(
+    for i, (video, translated_title) in enumerate(
         zip(videos, translated_titles, strict=True), start=1
     ):
         try:
             await repo.upsert_video(
                 video=VideoCreate(
                     **video,
-                    t_title=t_title,
+                    translated_title=translated_title,
                     user_id=user_id,
                 ),
                 db=db,
@@ -159,15 +160,10 @@ async def fetch_user_latest_videos(
         try:
             response = await tikhub.fetch_user_post_videos(sec_uid=sec_uid)
             break
-        except TikHubError as e:
-            logger.error(
-                "Failed to fetch user lastest videos - retries=%d - %s",
-                attempt,
-                e,
-            )
+        except TikHubError:
+            logger.exception("Failed to fetch user - retries=%d", attempt)
             continue
-        except Exception as e:
-            logger.error("Unknown error: %s", e)
+        except Exception:
             raise
 
     if not response or not response.data or not response.data.aweme_list:
@@ -244,12 +240,12 @@ async def _sync_user(
     if not name or name == existing.name:
         return existing
 
-    t_name = await _translate_text(name)
+    translated_name = await _translate_text(name)
     updated = await repo.update_user_by_id(
         user_id=existing.id,
         user=UserUpdate(
             name=name,
-            t_name=t_name,
+            translated_name=translated_name,
             last_fetched=int(datetime.now().timestamp()),
         ),
         db=db,
@@ -278,12 +274,12 @@ async def _sync_user_videos(
     # translate new videos in batch
     translated_titles = await _translate_video_titles(new_videos)
 
-    for video, t_title in zip(new_videos, translated_titles, strict=True):
+    for video, translated_title in zip(new_videos, translated_titles, strict=True):
         try:
             await repo.insert_video(
                 video=VideoCreate(
                     **video,
-                    t_title=t_title,
+                    translated_title=translated_title,
                     user_id=existing_user.id,
                 ),
                 db=db,
@@ -297,15 +293,15 @@ async def _sync_user_videos(
 
     for existing_video, video in update_videos:
         title = video["title"]
-        t_title = existing_video.t_title
+        translated_title = existing_video.translated_title
         if title and title != existing_video.title:
-            t_title = await _translate_text(title)
+            translated_title = await _translate_text(title)
         try:
             await repo.update_video_by_id(
                 video_id=existing_video.id,
                 video=VideoUpdate(
                     title=title,
-                    t_title=t_title,
+                    translated_title=translated_title,
                     digg_count=video["digg_count"],
                     duration=video["duration"],
                     urls=video["urls"],
@@ -323,11 +319,14 @@ async def fetch_latest_videos(
     db: Connection,
     tikhub: TikHubClient,
 ) -> AsyncGenerator[SSEEvent]:
-    active_users = await repo.select_active_users(db=db)
+    active_users = await repo.select_users_to_fetch(db=db)
+    active_users = active_users[-1:]
     total = len(active_users)
 
     yield SSEEvent(
-        status=EventStatus.STARTED, message="Fetching latest videos", progress=0
+        status=EventStatus.STARTED,
+        message="Fetching latest videos",
+        progress=0,
     )
 
     results = await asyncio.gather(
@@ -365,20 +364,46 @@ async def fetch_latest_videos(
     yield SSEEvent(status=EventStatus.COMPLETED, message="Done", progress=100)
 
 
-# TODO: review code & log/event message
-# TODO: update download name, restrict the length of file name
-#   : remove hastag
-#     name = f"{video.create_time[:8]}-{video.digg_count}-{video.video_id}-{title}"
-#     name = f"{name[: config.filename_max_len]}.mp4"
-#     path = f"{dir.rstrip('/')}/{name}"
-async def download_video(video: Video) -> tuple[Video, bool]:
+async def _get_video_download_path(video: Video, db: Connection) -> Path:
+    dt = datetime.fromtimestamp(video.create_time).strftime("%Y%m%d")
+    title_prefix = f"{dt}-{video.digg_count}-{video.aweme_id}"
+
+    (
+        system_name,
+        user_translated_name,
+    ) = await repo.select_system_name_and_user_translated_name_by_video_id(
+        video_id=video.id,
+        db=db,
+    )
+
+    # build path
+    if system_name and user_translated_name:
+        path = settings.source_dir / system_name / user_translated_name
+    elif system_name:
+        path = settings.source_dir / system_name
+    elif user_translated_name:
+        path = settings.source_dir / user_translated_name
+    else:
+        path = settings.source_dir
+
+    # strip hashtags from title
+    stem = "untitled"
+    if video.translated_title:
+        stem = video.translated_title.split("#")[0].strip() if video.title else ""
+    title = f"{title_prefix}-{stem}"
+    title = f"{title[: settings.file_name_max_len]}.mp4"
+
+    return path / title
+
+
+async def download_video(video: Video, db: Connection) -> tuple[Video, bool]:
     if not video.urls:
-        logger.warning("No URLs found for video - aweme_id=%s", video.aweme_id)
+        logger.warning("No URLs found - aweme_id=%s", video.aweme_id)
         return video, False
 
-    path = Path(f"/Users/sang/Desktop/test/{video.t_title}.mp4")
+    path = await _get_video_download_path(video=video, db=db)
     if path.exists():
-        logger.warning("Video already exists - path=%s", str(path))
+        logger.warning("Video already exists - aweme_id=%s", video.aweme_id)
         return video, True
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -390,25 +415,21 @@ async def download_video(video: Video) -> tuple[Video, bool]:
                 )
                 if download_ok:
                     return video, True
-            except Exception as e:
+            except Exception:
                 logger.error(
-                    "Exception during download"
-                    " - attempt=%d - url=%s - path=%s - error=%s",
+                    "Error during download - attempt=%d - aweme_id=%d",
                     attempt + 1,
-                    url,
-                    str(path),
-                    str(e),
+                    video.aweme_id,
                 )
             logger.error(
-                "Failed to download video - retry=%d - url=%s - path=%s",
+                "Failed to download video - attempt=%d - aweme_id=%s - url=%s",
                 attempt + 1,
+                video.aweme_id,
                 url,
-                str(path),
             )
     return video, False
 
 
-# TODO: review code & log/event message
 async def download_latest_videos(db: Connection) -> AsyncGenerator[SSEEvent]:
     yield SSEEvent(
         status=EventStatus.STARTED,
@@ -416,7 +437,7 @@ async def download_latest_videos(db: Connection) -> AsyncGenerator[SSEEvent]:
         progress=0,
     )
 
-    available_videos = await repo.select_available_videos(db=db)
+    available_videos = await repo.select_videos_to_download(db=db)
     if not available_videos:
         yield SSEEvent(
             status=EventStatus.COMPLETED,
@@ -429,7 +450,10 @@ async def download_latest_videos(db: Connection) -> AsyncGenerator[SSEEvent]:
     completed = 0
 
     tasks = [
-        asyncio.create_task(download_video(v), name=f"download-{v.aweme_id}")
+        asyncio.create_task(
+            download_video(video=v, db=db),
+            name=f"download-{v.aweme_id}",
+        )
         for v in available_videos
     ]
 
@@ -439,15 +463,14 @@ async def download_latest_videos(db: Connection) -> AsyncGenerator[SSEEvent]:
         completed += 1
         progress = int((completed / total) * 100)
 
-        saved_video = await repo.update_video_by_id(
+        if video.is_downloaded == result:
+            continue
+
+        await repo.update_video_by_id(
             video_id=video.id,
             video=VideoUpdate(is_downloaded=result),
             db=db,
         )
-        if saved_video:
-            logger.debug(
-                "Updated video download status - aweme_id=%s", saved_video.aweme_id
-            )
 
         yield SSEEvent(
             status=EventStatus.COMPLETED if result else EventStatus.FAILED,
@@ -457,6 +480,6 @@ async def download_latest_videos(db: Connection) -> AsyncGenerator[SSEEvent]:
 
     yield SSEEvent(
         status=EventStatus.COMPLETED,
-        message=f"Done - {completed}/{total} videos are downloaded",
+        message=f"{completed}/{total} videos are downloaded",
         progress=100,
     )

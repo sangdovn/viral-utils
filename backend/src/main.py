@@ -1,10 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from src.database import init_db
 from src.douyin.router import router as douyin_router
+from src.exceptions import AppException
 from src.logging import setup_logging
 from src.video.router import router as video_router
 
@@ -21,6 +23,21 @@ async def lifespan(app: FastAPI):
 
 # app
 app = FastAPI(title="Viral Utils", lifespan=lifespan)
+
+
+@app.exception_handler(AppException)
+async def app_error_handler(request: Request, error: AppException) -> JSONResponse:
+    return JSONResponse(
+        status_code=error.status_code,
+        content={"detail": error.message},
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_error_handler(request: Request, error: Exception) -> JSONResponse:
+    logger.exception("Unhandled error")
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 
 # routes
 app.include_router(video_router)

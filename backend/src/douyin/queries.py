@@ -69,16 +69,20 @@ DO UPDATE SET
 
 SELECT_USERS = "SELECT * FROM users"
 
-# TODO: update this query, add OR filter when ready
-SELECT_ACTIVE_USERS = """
+SELECT_USERS_TO_FETCH = """
 SELECT *
 FROM users
-WHERE status IN ('active', 'testing')
-AND (
-    last_fetched IS NULL
+WHERE (
+    status == 'active'
+    AND (
+        last_fetched IS NULL
+        OR last_fetched < unixepoch('now', 'start of day')
+    )
+OR (
+    status == 'testing'
+    AND last_fetched IS NULL
 )
 """
-# OR date(last_fetched, 'unixepoch') < date('now')
 
 SELECT_USER_BY_ID = "SELECT * FROM users WHERE id = :id"
 
@@ -108,7 +112,7 @@ INSERT_VIDEO = """
 INSERT INTO videos (
     aweme_id,
     title,
-    t_title,
+    translated_title,
     create_time,
     digg_count,
     duration,
@@ -119,7 +123,7 @@ INSERT INTO videos (
 VALUES (
     :aweme_id,
     :title,
-    :t_title,
+    :translated_title,
     :create_time,
     :digg_count,
     :duration,
@@ -133,7 +137,7 @@ UPSERT_VIDEO = """
 INSERT INTO videos (
     aweme_id,
     title,
-    t_title,
+    translated_title,
     create_time,
     digg_count,
     duration,
@@ -144,7 +148,7 @@ INSERT INTO videos (
 VALUES (
     :aweme_id,
     :title,
-    :t_title,
+    :translated_title,
     :create_time,
     :digg_count,
     :duration,
@@ -155,7 +159,7 @@ VALUES (
 ON CONFLICT (aweme_id)
 DO UPDATE SET
     title = EXCLUDED.title,
-    t_title = EXCLUDED.t_title,
+    translated_title = EXCLUDED.translated_title,
     create_time = EXCLUDED.create_time,
     digg_count = EXCLUDED.digg_count,
     duration = EXCLUDED.duration,
@@ -166,12 +170,10 @@ DO UPDATE SET
 
 SELECT_VIDEOS = "SELECT * FROM videos"
 
-# TODO: update this query, add OR filter when ready
-SELECT_AVAILABLE_VIDEOS = """
+SELECT_VIDEOS_TO_DOWNLOAD = """
 SELECT * FROM videos v
 INNER JOIN users u ON v.user_id = u.id
 WHERE u.status IN ('active', 'testing')
-AND u.last_fetched IS NULL
 AND v.is_downloaded = 0
 """
 # OR date(last_fetched, 'unixepoch') < date('now')
@@ -195,7 +197,7 @@ UPDATE_VIDEO_BY_ID = """
 UPDATE videos
 SET
     title = :title,
-    t_title = :t_title,
+    translated_title = :translated_title,
     is_downloaded = :is_downloaded
 WHERE id = :id
 """

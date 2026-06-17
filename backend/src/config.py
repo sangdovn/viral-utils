@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     groq_api_key: str = ""
     openrouter_api_key: str = ""
+    old_db_path: str = ""
+    file_name_max_len: int = 160
 
     @property
     def db_path(self) -> Path:

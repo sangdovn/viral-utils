@@ -59,7 +59,7 @@ class UserResponse(UserBase):
 
 class VideoBase(BaseModel):
     title: str | None = None
-    t_title: str | None = None
+    translated_title: str | None = None
     create_time: int
     digg_count: int
     duration: int | None = None
@@ -74,7 +74,7 @@ class VideoCreate(VideoBase):
 
 class VideoUpdate(BaseModel):
     title: str | None = None
-    t_title: str | None = None
+    translated_title: str | None = None
     digg_count: int | None = None
     duration: int | None = None
     urls: str | None = None

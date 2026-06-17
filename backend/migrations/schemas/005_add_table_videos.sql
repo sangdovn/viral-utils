@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS videos(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     aweme_id TEXT NOT NULL UNIQUE,
     title TEXT,
-    t_title TEXT,
+    translated_title TEXT,
     create_time INTEGER,
     digg_count INTEGER,
     duration INTEGER,
