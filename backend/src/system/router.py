@@ -33,7 +33,7 @@ async def create_system(system: SystemCreate, db: DbConnection) -> SystemRespons
         if not created:
             raise HTTPException(status_code=500, detail="Failed to create system")
     except Exception as e:
-        logger.error("Failed to create system - %e", e)
+        logger.exception("Failed to create system - %e", e)
 
     return SystemResponse.model_validate(created)
 
@@ -51,7 +51,7 @@ async def update_system(
         if not updated:
             raise HTTPException(status_code=500, detail="Failed to update system")
     except Exception as e:
-        logger.error("Failed to update system - %e", e)
+        logger.exception("Failed to update system - %e", e)
 
     return SystemResponse.model_validate(updated)
 
@@ -65,5 +65,5 @@ async def delete_system(system_id: int, db: DbConnection) -> None:
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to delete system - %s", e)
+        logger.exception("Failed to delete system - %s", e)
         raise HTTPException(status_code=500, detail="Failed to delete system") from e
