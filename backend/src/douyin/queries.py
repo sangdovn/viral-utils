@@ -1,3 +1,34 @@
+# ==============================================================================
+# USER
+# ==============================================================================
+
+INSERT_USER = """
+INSERT INTO users (
+    sec_uid,
+    name,
+    t_name,
+    status,
+    topic,
+    niche,
+    sub_niche,
+    micro_niche,
+    note,
+    last_fetched
+)
+VALUES (
+    :sec_uid,
+    :name,
+    :t_name,
+    :status,
+    :topic,
+    :niche,
+    :sub_niche,
+    :micro_niche,
+    :note,
+    :last_fetched
+)
+"""
+
 UPSERT_USER = """
 INSERT INTO users (
     sec_uid,
@@ -35,18 +66,24 @@ DO UPDATE SET
     note = EXCLUDED.note,
     last_fetched = EXCLUDED.last_fetched
 """
+
 SELECT_USERS = "SELECT * FROM users"
+
+# TODO: update this query, add OR filter when ready
 SELECT_ACTIVE_USERS = """
 SELECT *
 FROM users
 WHERE status IN ('active', 'testing')
 AND (
-    last_fetched IS NULL OR last_fetched = 0
+    last_fetched IS NULL
 )
 """
 # OR date(last_fetched, 'unixepoch') < date('now')
+
 SELECT_USER_BY_ID = "SELECT * FROM users WHERE id = :id"
+
 SELECT_USER_BY_SEC_UID = "SELECT * FROM users WHERE sec_uid = :sec_uid"
+
 UPDATE_USER_BY_ID = """
 UPDATE users
 SET
@@ -60,6 +97,36 @@ SET
     note = :note,
     last_fetched = :last_fetched
 WHERE id = :id
+"""
+
+
+# ==============================================================================
+# VIDEO
+# ==============================================================================
+
+INSERT_VIDEO = """
+INSERT INTO videos (
+    aweme_id,
+    title,
+    t_title,
+    create_time,
+    digg_count,
+    duration,
+    urls,
+    is_downloaded,
+    user_id
+)
+VALUES (
+    :aweme_id,
+    :title,
+    :t_title,
+    :create_time,
+    :digg_count,
+    :duration,
+    :urls,
+    :is_downloaded,
+    :user_id
+)
 """
 
 UPSERT_VIDEO = """
@@ -96,10 +163,26 @@ DO UPDATE SET
     is_downloaded = EXCLUDED.is_downloaded,
     user_id = EXCLUDED.user_id
 """
+
 SELECT_VIDEOS = "SELECT * FROM videos"
+
+# TODO: update this query, add OR filter when ready
+SELECT_AVAILABLE_VIDEOS = """
+SELECT * FROM videos v
+INNER JOIN users u ON v.user_id = u.id
+WHERE u.status IN ('active', 'testing')
+AND u.last_fetched IS NULL
+AND v.is_downloaded = 0
+"""
+# OR date(last_fetched, 'unixepoch') < date('now')
+
+
 SELECT_VIDEO_BY_ID = "SELECT * FROM videos WHERE id = :id"
+
 SELECT_VIDEO_BY_AWEME_ID = "SELECT * FROM videos WHERE aweme_id = :aweme_id"
+
 SELECT_VIDEOS_BY_USER_ID = "SELECT * FROM videos WHERE user_id = :user_id"
+
 UPDATE_VIDEO_BY_ID = """
 UPDATE videos
 SET

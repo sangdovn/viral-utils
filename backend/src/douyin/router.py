@@ -1,18 +1,15 @@
 import logging
 from collections.abc import AsyncGenerator
 
-from aiosqlite import Connection
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi.sse import EventSourceResponse
 
 from src.common.schemas import EventStatus, SSEEvent
-from src.database import get_db
+from src.database import DbConnection
 from src.douyin import service
-from src.douyin.exceptions import UpsertUserError
-from src.douyin.schemas import CreateUserAndVideosRequest, UserCreate
-from src.douyin.utils import extract_sec_uid
-from src.tikhub.client import TikHubClient
-from src.tikhub.dependencies import get_tikhub_client
+from src.douyin.exceptions import FetchUserVideosError, InsertUserError, UserExistsError
+from src.douyin.schemas import UserCreate
+from src.tikhub.dependencies import TikHubClientDep
 from src.tikhub.exceptions import TikHubError
 
 logger = logging.getLogger(__name__)
@@ -22,36 +19,53 @@ router = APIRouter(prefix="/douyin")
 
 @router.post("/user", response_class=EventSourceResponse)
 async def create_user_videos(
-    request: CreateUserAndVideosRequest,
-    db: Connection = Depends(get_db),
-    tikhub: TikHubClient = Depends(get_tikhub_client),
+    request: UserCreate,
+    db: DbConnection,
+    tikhub: TikHubClientDep,
 ) -> AsyncGenerator[SSEEvent]:
-    sec_uid = extract_sec_uid(request.url)
-    user = UserCreate(
-        **request.model_dump(exclude={"url"}, exclude_none=True),
-        sec_uid=sec_uid,
-    )
     try:
-        async for event in service.upsert_user_videos(user=user, db=db, tikhub=tikhub):
+        async for event in service.create_user_videos(
+            user=UserCreate(**request.model_dump()),
+            db=db,
+            tikhub=tikhub,
+        ):
             yield event
+        return
     except TikHubError as e:
-        logger.error(f"TikHub error: {e}")
-        yield SSEEvent(status=EventStatus.FAILED, message="TikHub error")
-    except UpsertUserError:
-        logger.error("Upsert user error - %s", sec_uid)
-        yield SSEEvent(status=EventStatus.FAILED, message="Upsert user failed")
+        logger.error("TikHub error - %s - sec_uid=%s", e, request.sec_uid)
+    except FetchUserVideosError as e:
+        logger.error("Fetch error - %s - sec_uid=%s", e, request.sec_uid)
+    except (InsertUserError, UserExistsError) as e:
+        logger.error("Database error - %s - sec_uid=%s", e, request.sec_uid)
     except Exception as e:
-        logger.error("Unexpected error: %s", e)
-        yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
+        logger.error("Unexpected error - %s - sec_uid=%s", e, request.sec_uid)
+    yield SSEEvent(status=EventStatus.FAILED, message="Failed to create user videos")
 
 
 @router.get("/fetch_latest_videos")
 async def fetch_latest_videos(
-    db: Connection = Depends(get_db), tikhub: TikHubClient = Depends(get_tikhub_client)
-):
+    db: DbConnection,
+    tikhub: TikHubClientDep,
+) -> AsyncGenerator[SSEEvent]:
     try:
         async for event in service.fetch_latest_videos(db=db, tikhub=tikhub):
             yield event
+        return
     except Exception as e:
         logger.error("Unexpected error - %s", e)
-        yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
+    yield SSEEvent(status=EventStatus.FAILED, message="Failed to fetch latest videos")
+
+
+@router.get("/download_latest_videos")
+async def download_latest_videos(db: DbConnection):
+    try:
+        # TODO: add fetch latest video here
+        async for event in service.download_latest_videos(db=db):
+            yield event
+        return
+    except Exception as e:
+        logger.error("Unexpected error - %s", e)
+    yield SSEEvent(
+        status=EventStatus.FAILED,
+        message="Failed to download latest videos",
+    )
