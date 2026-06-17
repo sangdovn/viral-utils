@@ -50,7 +50,7 @@ async def migrate_users(new_db: Connection, old_db: Connection):
                 user=UserCreate(
                     sec_uid=sec_uid,
                     name=data["name"],
-                    t_name=data["translated_name"],
+                    translated_name=data["translated_name"],
                     status=status,
                     niche=data["niche"],
                     note=data["note"],

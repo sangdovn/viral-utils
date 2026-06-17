@@ -6,7 +6,7 @@ INSERT_USER = """
 INSERT INTO users (
     sec_uid,
     name,
-    t_name,
+    translated_name,
     status,
     topic,
     niche,
@@ -18,7 +18,7 @@ INSERT INTO users (
 VALUES (
     :sec_uid,
     :name,
-    :t_name,
+    :translated_name,
     :status,
     :topic,
     :niche,
@@ -33,7 +33,7 @@ UPSERT_USER = """
 INSERT INTO users (
     sec_uid,
     name,
-    t_name,
+    translated_name,
     status,
     topic,
     niche,
@@ -45,7 +45,7 @@ INSERT INTO users (
 VALUES (
     :sec_uid,
     :name,
-    :t_name,
+    :translated_name,
     :status,
     :topic,
     :niche,
@@ -57,7 +57,7 @@ VALUES (
 ON CONFLICT (sec_uid)
 DO UPDATE SET
     name = EXCLUDED.name,
-    t_name = EXCLUDED.t_name,
+    translated_name = EXCLUDED.translated_name,
     status = EXCLUDED.status,
     topic = EXCLUDED.topic,
     niche = EXCLUDED.niche,
@@ -88,7 +88,7 @@ UPDATE_USER_BY_ID = """
 UPDATE users
 SET
     name = :name,
-    t_name = :t_name,
+    translated_name = :translated_name,
     status = :status,
     topic = :topic,
     niche = :niche,
@@ -182,6 +182,14 @@ SELECT_VIDEO_BY_ID = "SELECT * FROM videos WHERE id = :id"
 SELECT_VIDEO_BY_AWEME_ID = "SELECT * FROM videos WHERE aweme_id = :aweme_id"
 
 SELECT_VIDEOS_BY_USER_ID = "SELECT * FROM videos WHERE user_id = :user_id"
+
+SELECT_SYSTEM_NAME_BY_VIDEO_ID = """
+SELECT s.name, u.translated_name
+FROM videos v
+INNER JOIN users u ON v.user_id = u.id
+LEFT JOIN systems s ON u.system_id = s.id
+WHERE v.id = :id
+"""
 
 UPDATE_VIDEO_BY_ID = """
 UPDATE videos

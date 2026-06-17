@@ -19,7 +19,7 @@ class FetchUserRequest(BaseModel):
 class UserBase(BaseModel):
     sec_uid: str
     name: str | None = None
-    t_name: str | None = None
+    translated_name: str | None = None
     status: UserStatus = UserStatus.PENDING
     topic: str | None = None
     niche: str | None = None
@@ -35,7 +35,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     name: str | None = None
-    t_name: str | None = None
+    translated_name: str | None = None
     status: UserStatus | None = None
     topic: str | None = None
     niche: str | None = None
@@ -60,8 +60,8 @@ class UserResponse(UserBase):
 class VideoBase(BaseModel):
     title: str | None = None
     t_title: str | None = None
-    create_time: int | None = None
-    digg_count: int | None = None
+    create_time: int
+    digg_count: int
     duration: int | None = None
     urls: str | None = None
     is_downloaded: bool = False
@@ -85,6 +85,5 @@ class Video(VideoBase):
     id: int
     aweme_id: str
     user_id: int
-    create_time: int | None = None
     created_at: int
     updated_at: int

@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sec_uid TEXT NOT NULL UNIQUE,
     name TEXT,
-    t_name TEXT,
+    translated_name TEXT,
     status TEXT NOT NULL DEFAULT 'inactive' CHECK (status IN ('active', 'testing', 'pending', "dropped")),
     topic TEXT,
     niche TEXT,
