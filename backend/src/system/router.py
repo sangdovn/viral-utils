@@ -56,11 +56,14 @@ async def update_system(
     return SystemResponse.model_validate(updated)
 
 
-@router.delete("/{system_id}")
+@router.delete("/{system_id}", status_code=204)
 async def delete_system(system_id: int, db: DbConnection) -> None:
     try:
         deleted = await repo.delete_system_by_id(system_id=system_id, db=db)
         if not deleted:
-            raise HTTPException(status_code=500, detail="Failed to delete system")
+            raise HTTPException(status_code=404, detail="System not found")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error("Failed to delete system - %e", e)
+        logger.error("Failed to delete system - %s", e)
+        raise HTTPException(status_code=500, detail="Failed to delete system") from e
