@@ -1,7 +1,9 @@
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Annotated
 
 from aiosqlite import Connection, Row, connect
+from fastapi import Depends
 
 from src.config import settings
 
@@ -19,3 +21,6 @@ async def get_db() -> AsyncGenerator[Connection]:
         await conn.execute("PRAGMA foreign_keys = ON")
         conn.row_factory = Row  # returns dict-like rows
         yield conn
+
+
+DbConnection = Annotated[Connection, Depends(get_db)]
