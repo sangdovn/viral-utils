@@ -320,7 +320,6 @@ async def fetch_latest_videos(
     tikhub: TikHubClient,
 ) -> AsyncGenerator[SSEEvent]:
     active_users = await repo.select_users_to_fetch(db=db)
-    active_users = active_users[-1:]
     total = len(active_users)
 
     yield SSEEvent(
