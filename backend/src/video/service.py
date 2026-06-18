@@ -1,123 +1,106 @@
-import asyncio
-from concurrent.futures import ProcessPoolExecutor
+import logging
+import threading
+from collections.abc import Generator
 from pathlib import Path
 
-from send2trash import send2trash
-
-from src.llm.client import LLMClient
-from src.logging import get_logger
-from src.video import ffmpeg, ocr, renderer, subtitle
-from src.video.config import video_config
 from src.video.constants import ALLOWED_EXTENSIONS
-from src.video.exceptions import InpaintingError, TranslationError
-from src.video.schemas import (
-    InpaintAllResponse,
-    InpaintResponse,
-    InpaintResult,
-    InpaintStatus,
-)
+from src.video.engine import VideoEngineProtocol
+from src.video.schemas import ProcessVideosRequest
 
-logger = get_logger(__name__)
+from src.inpainting import service as inpaint_service
+from src.inpainting.engine import InpaintEngineProtocol
+from src.inpainting.schemas import InpaintConfig
+from src.llm.schemas import LLMModel
+from src.ocr import service as ocr_service
+from src.ocr.engine import OcrEngine
+from src.ocr.schemas import OcrConfig
+from src.shared.schemas import EventStatus, SSEEvent
+from src.subtitle import service as subtitle_service
+from src.subtitle.schemas import SubtitleConfig
 
-
-async def inpaint_video(
-    input_path: str | Path,
-    output_path: str | Path,
-    llm_client: LLMClient,
-) -> InpaintResponse:
-    """Inpaint hardcoded subtitles from a video frame by frame.
-
-    Args:
-        input_path: Path to the source video file.
-        output_path: Path to save the inpainted video.
-
-    Returns:
-        Path to the inpainted video file.
-    """
-    input_path = Path(input_path)
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    srt_path = output_path.parent / f"{input_path.stem}.srt"
-    metadata = ffmpeg.get_video_metadata(input_path=input_path)
-
-    try:
-        # ocr
-        ocr_subs = ocr.run(
-            video_path=input_path,
-            metadata=metadata,
-        )
-        # merge subtitles
-        merged_subs = subtitle.merge_subtitles(
-            subtitles=ocr_subs,
-            metadata=metadata,
-        )
-
-        translate_task = asyncio.create_task(
-            subtitle.translate_subtitle(
-                subtitles=merged_subs,
-                llm_client=llm_client,
-            )
-        )
-
-        # inpaint subtitles
-        loop = asyncio.get_running_loop()
-        with ProcessPoolExecutor() as executor:
-            await loop.run_in_executor(
-                executor,
-                renderer.inpaint_video,
-                input_path,
-                metadata,
-                merged_subs,
-                output_path,
-            )
-
-        translated_subs = await translate_task
-        subtitle.write_srt(subtitles=translated_subs, srt_path=srt_path)
-    except TranslationError as e:
-        logger.exception("Translation failed - %s - %s", input_path.name, e)
-        raise
-    except InpaintingError as e:
-        logger.exception("Inpainting failed - %s - %s", input_path.name, e)
-        raise
-
-    return InpaintResponse(output_path=str(output_path), srt_path=str(srt_path))
+logger = logging.getLogger(__name__)
 
 
-async def inpaint_all_videos(llm_client: LLMClient) -> InpaintAllResponse:
-    input_dir = Path(video_config.raw_dir)
-    output_dir = Path(video_config.processed_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    results: list[InpaintResult] = []
+def process(
+    request: ProcessVideosRequest,
+    video_engine: VideoEngineProtocol,
+    ocr_engine: OcrEngine,
+    ocr_config: OcrConfig,
+    subtitle_config: SubtitleConfig,
+    inpaint_engine: InpaintEngineProtocol,
+    inpaint_config: InpaintConfig,
+    llm_models: list[LLMModel],
+    cancel: threading.Event | None = None,
+) -> Generator[SSEEvent]:
+    in_dir = Path(request.in_dir)
+    out_dir = Path(request.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    files = [f for f in in_dir.glob("*") if f.suffix in ALLOWED_EXTENSIONS]
 
-    files = input_dir.glob("*")
-    files = [f for f in files if f.suffix in ALLOWED_EXTENSIONS]
     for f in files:
-        try:
-            await inpaint_video(
-                input_path=f,
-                output_path=output_dir / f.name,
-                llm_client=llm_client,
-            )
-            send2trash(str(f))
-            results.append(
-                InpaintResult(
-                    file=f.name,
-                    status=InpaintStatus.OK,
-                )
-            )
-        except (InpaintingError, TranslationError) as e:
-            logger.exception("Failed to process %s", f.name)
-            results.append(
-                InpaintResult(
-                    file=f.name,
-                    status=InpaintStatus.ERROR,
-                    error=str(e),
-                )
-            )
+        yield SSEEvent(status=EventStatus.PROCESSING, message=f"Processing {f.name}")
 
-    return InpaintAllResponse(
-        total=len(files),
-        succeeded=sum(1 for r in results if r.status == InpaintStatus.OK),
-        failed=sum(1 for r in results if r.status == InpaintStatus.ERROR),
-        results=results,
-    )
+        # --- OCR ---
+        ocr_generator = ocr_service.extract(
+            video_path=f,
+            video_engine=video_engine,
+            engine=ocr_engine,
+            config=ocr_config,
+            cancel=cancel,
+        )
+        try:
+            while True:
+                event = next(ocr_generator)
+                yield event
+                if event.status == EventStatus.CANCELLED:
+                    return
+        except StopIteration as e:
+            ocr_subs = e.value
+        logger.info("Completed OCR")
+
+        if not ocr_subs:
+            logger.warning("No subtitles found")
+            yield SSEEvent(
+                status=EventStatus.COMPLETED,
+                message=str(f.name),
+            )
+            continue
+
+        # --- Merge subtitles ---
+        merged_subs = subtitle_service.merge(
+            video_path=f,
+            video_engine=video_engine,
+            subtitles=ocr_subs,
+            subtitle_config=subtitle_config,
+        )
+        yield SSEEvent(status=EventStatus.PROCESSING, message="Merged subtitles")
+
+        # --- Translate merged subtitles ---
+        yield SSEEvent(status=EventStatus.PROCESSING, message="Translated subtitles")
+        srt_path = out_dir / f"{f.stem}.srt"
+        translated_subs = subtitle_service.translate(
+            video_path=f,
+            subtitles=merged_subs,
+            llm_models=llm_models,
+        )
+        subtitle_service.write_srt(subtitles=translated_subs, srt_path=srt_path)
+
+        # --- Inpaint ---
+        for event in inpaint_service.inpaint(
+            video_path=f,
+            out_path=out_dir / f.name,
+            video_engine=video_engine,
+            engine=inpaint_engine,
+            subtitles=translated_subs,
+            config=inpaint_config,
+            cancel=cancel,
+        ):
+            yield event
+            if event.status == EventStatus.CANCELLED:
+                return
+
+        # --- Move video to trash after process ---
+        yield SSEEvent(status=EventStatus.PROCESSING, message="Delete original video")
+
+    yield SSEEvent(status=EventStatus.COMPLETED, message=str(f))
+    logger.info("Completed processing all videos")
