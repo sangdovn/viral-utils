@@ -1,26 +1,47 @@
-line-length = 88           # max line length (Black standard)
-indent-width = 4           # 4 spaces per level (PEP 8 standard)
+# Maximum line length used by Ruff formatter and linter
+line-length = 88
+
+# Number of spaces per indentation level
+indent-width = 4
 
 [lint]
 select = [
-  "E",   # pycodestyle errors
+  "E",   # pycodestyle errors (PEP 8 violations)
   "W",   # pycodestyle warnings
-  "F",   # pyflakes — unused imports, undefined names
-  "I",   # isort — import sorting
-  "UP",  # pyupgrade — modernize syntax
-  "B",   # bugbear — common bugs and gotchas
+  "F",   # pyflakes (unused imports, undefined names, etc.)
+  "I",   # isort (import sorting)
+  "UP",  # pyupgrade (modern Python syntax)
+  "B",   # flake8-bugbear (common bugs and footguns)
+  "SIM", # flake8-simplify (simpler, cleaner code patterns)
+  "RUF", # Ruff-specific rules and improvements
 ]
-ignore = ["E501"]   # ignore line-too-long, let formatter handle it
-fixable = ["ALL"]   # auto-fix anything that can be safely fixed
+
+# Ignore rules that conflict with the formatter or project preferences
+ignore = [
+  "B008", # allow function calls in default arguments (e.g. Depends() in FastAPI)
+]
+
+# Allow Ruff to automatically fix any rule that supports fixing
+fixable = ["ALL"]
 
 [lint.per-file-ignores]
-"__init__.py" = ["F401"]  # allow unused imports in __init__.py (re-exports)
+# Allow re-export patterns such as:
+# from .models import User
+"__init__.py" = ["F401"]
 
 [lint.isort]
-force-single-line = false    # keep related imports grouped
-combine-as-imports = true    # combine "import x" and "import x as y"
+# Keep imports from the same module on one line when possible
+force-single-line = false
+
+# Combine compatible aliased imports
+combine-as-imports = true
 
 [format]
-quote-style = "double"            # consistent double quotes
-indent-style = "space"            # spaces over tabs
-skip-magic-trailing-comma = false # respect trailing commas
+# Use double quotes consistently
+quote-style = "double"
+
+# Use spaces instead of tabs
+indent-style = "space"
+
+# Respect trailing commas for stable multiline formatting
+skip-magic-trailing-comma = false
