@@ -1,20 +1,27 @@
-class LLMError(Exception):
+from src.exceptions import AppException
+
+
+class LLMError(AppException):
     """Base for all LLM errors."""
 
 
-class RateLimitError(LLMError):
+class RateLimitError(AppException):
     """Provider is rate-limited - try next, maybe retry later."""
 
 
-class AuthError(LLMError):
+class AuthError(AppException):
     """Bad or missing API key - no point retrying this provider."""
 
 
-class EmptyResponseError(LLMError):
+class EmptyResponseError(AppException):
     """Provider returned a result but content was None/empty."""
 
 
-def normalize_error(e: Exception) -> LLMError:
+class LLMAllModelsFailed(AppException):
+    """All rotation models are failed to complete."""
+
+
+def normalize_error(e: Exception) -> AppException:
     """Map provider-specific exceptions to our own error types."""
     code = getattr(e, "status_code", None) or getattr(e, "code", None)
     msg = str(e)

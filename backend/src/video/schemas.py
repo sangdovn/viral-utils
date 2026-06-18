@@ -3,98 +3,73 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.video.constants import ALLOWED_EXTENSIONS
+from src.config import settings
+from src.inpainting.schemas import InpaintEngine
+from src.llm.constants import LLM_MODELS
+from src.llm.schemas import LLMModel
+from src.ocr.schemas import OcrEngine
 
 
-class VideoMetadata(BaseModel):
-    width: int
-    height: int
-    fps: float
-    total_frames: int
-    color_range: str
-    color_space: str
-    color_primaries: str
-    color_transfer: str
-    pix_fmt: str
-    duration: float
+class VideoEngine(StrEnum):
+    PYAV = "pyav"
+    FFMPEG = "ffmpeg"
+    OPENCV = "opencv"
 
 
-class BoundingBox(BaseModel):
-    x1: int
-    y1: int
-    x2: int
-    y2: int
+class VideoCodec(StrEnum):
+    H264_VIDEOTOOLBOX = "h264_videotoolbox"  # mac hw h264
+    HEVC_VIDEOTOOLBOX = "hevc_videotoolbox"  # mac hw hevc (default)
+    LIBX264 = "libx264"  # sw h264, cross-platform
+    LIBX265 = "libx265"  # sw hevc, cross-platform
 
 
-class Subtitle(BaseModel):
-    text: str
-    conf: float
-    bbox: BoundingBox
-    start: float
-    end: float
+class VideoConfig(BaseModel):
+    codec: VideoCodec
+    quality: int
 
 
-class VideoConfigUpdate(BaseModel):
-    # --- OCR ---
-    ocr_engine_name: str | None = None
-    ocr_sample_interval: int | None = None
-    ocr_chinese_only: bool | None = None
-    ocr_delay: float | None = None
-    # --- Subtitle ---
-    sub_time_gap_tolerance: float | None = None
-    sub_text_similarity_threshold: float | None = None
-    sub_box_iou_threshold: float | None = None
-    sub_frame_padding: int | None = None
-    # --- Translate ---
-    translate_conf_threshold: float | None = None
-    # --- Inpaint ---
-    inpaint_conf_threshold: float | None = None
-    inpaint_scale: float | None = None
-    inpaint_expand: int | None = None
-    inpaint_radius: int | None = None
-    inpaint_delay: float | None = None
-    # --- Output ---
-    output_dir: Path | None = None
+class ProcessVideosRequest(BaseModel):
+    # I/O
+    in_dir: str = str(settings.raw_dir)
+    out_dir: str = str(settings.process_dir)
 
+    # Video
+    video_engine: VideoEngine = VideoEngine.FFMPEG
+    video_codec: VideoCodec = VideoCodec.HEVC_VIDEOTOOLBOX
+    video_quality: int = Field(default=80, ge=0, le=100)
+    # OCR
+    ocr_engine: OcrEngine = OcrEngine.OCRMAC
+    ocr_sample_interval: int = 3
+    ocr_delay: float = 0.3
+    ocr_chinese_only: bool = True
+    # Subtitle
+    sub_time_gap_tolerance: float = 0.5
+    sub_text_similarity_threshold: float = 0.5
+    sub_box_iou_threshold: float = 0.5
+    sub_frame_padding: int = 3
+    # Inpaint
+    inpaint_engine: InpaintEngine = InpaintEngine.OPENCV
+    inpaint_conf_threshold: float = 0.3
+    inpaint_scale: float = 0.85
+    inpaint_expand: int = 10
+    inpaint_radius: int = 5
+    inpaint_delay: float = 0.05
 
-class InpaintRequest(BaseModel):
-    input_path: str
-    output_path: str
+    # LLM
+    llm_models: list[LLMModel] = Field(
+        default_factory=lambda: [LLMModel(**m) for m in LLM_MODELS]
+    )
 
-    @field_validator("input_path")
+    @field_validator("in_dir")
     @classmethod
-    def validate_video_path(cls, input_path: str) -> Path:
-        path = Path(input_path)
-        if not path.exists() or not path.is_file():
-            raise ValueError("File not found")
-        if path.suffix.lower() not in ALLOWED_EXTENSIONS:
-            raise ValueError("Unsupported format")
-        return path
+    def input_required(cls, v):
+        if not Path(v).exists():
+            raise ValueError(f"input directory does not exist: {v}")
+        return v
 
-
-class InpaintResponse(BaseModel):
-    output_path: str
-    srt_path: str
-
-
-class InpaintStatus(StrEnum):
-    OK = "OK"
-    ERROR = "ERROR"
-
-
-class InpaintResult(BaseModel):
-    file: str
-    status: InpaintStatus
-    error: str | None = None
-
-
-class InpaintAllResponse(BaseModel):
-    total: int
-    succeeded: int
-    failed: int
-    results: list[InpaintResult]
-
-
-class OcrResult(BaseModel):
-    video_path: str
-    subtitles: list[Subtitle] = Field(default_factory=list)
+    @field_validator("llm_models")
+    @classmethod
+    def llm_models_required(cls, v):
+        if not v:
+            raise ValueError("at least one LLM model is required")
+        return v
