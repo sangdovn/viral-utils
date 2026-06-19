@@ -32,6 +32,7 @@ async def get_system(system_id: int, db: DbConnection) -> SystemResponse:
         logger.exception(e)
         raise
 
+
 @router.post("/")
 async def create_system(system: SystemCreate, db: DbConnection) -> SystemResponse:
     try:
@@ -43,9 +44,12 @@ async def create_system(system: SystemCreate, db: DbConnection) -> SystemRespons
         logger.exception("Failed to create system - %e", e)
         raise
 
+
 @router.put("/{system_id}")
 async def update_system(
-    system_id: int, system: SystemUpdate, db: DbConnection,
+    system_id: int,
+    system: SystemUpdate,
+    db: DbConnection,
 ) -> SystemResponse:
     try:
         updated = await repo.update_system_by_id(
@@ -61,7 +65,6 @@ async def update_system(
         raise
 
 
-
 @router.delete("/{system_id}", status_code=204)
 async def delete_system(system_id: int, db: DbConnection) -> None:
     try:
@@ -71,3 +74,4 @@ async def delete_system(system_id: int, db: DbConnection) -> None:
     except Exception as e:
         logger.exception(e)
         raise
+
