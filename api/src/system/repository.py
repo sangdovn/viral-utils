@@ -1,6 +1,7 @@
 from aiosqlite import Connection
 
 from src.system.queries import (
+    DELETE_SYSTEM_BY_ID,
     INSERT_SYSTEM,
     SELECT_SYSTEM_BY_ID,
     SELECT_SYSTEMS,
@@ -47,6 +48,6 @@ async def delete_system_by_id(system_id: int, db: Connection) -> bool:
     if not existing:
         return False
 
-    await db.execute(UPDATE_SYSTEM_BY_ID, {"id": system_id})
+    await db.execute(DELETE_SYSTEM_BY_ID, {"id": system_id})
     await db.commit()
     return True
