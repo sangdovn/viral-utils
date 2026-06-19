@@ -6,7 +6,7 @@ class SystemBase(BaseModel):
     description: str | None = None
 
 
-class System(BaseModel):
+class System(SystemBase):
     id: int
     created_at: int
     updated_at: int
@@ -16,9 +16,8 @@ class SystemCreate(SystemBase):
     pass
 
 
-class SystemUpdate(BaseModel):
-    name: str
-    description: str | None = None
+class SystemUpdate(SystemBase):
+    pass
 
 
 class SystemResponse(SystemBase):
