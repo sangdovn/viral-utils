@@ -1,9 +1,9 @@
 import type { JSX } from "react";
-import type Douyin from "@/pages/Douyin";
-import type Home from "@/pages/Home";
-import type Platforms from "@/pages/Platforms";
-import type Systems from "@/pages/Systems";
-import type Video from "@/pages/Video";
+import Douyin from "@/pages/Douyin";
+import Home from "@/pages/Home";
+import Platforms from "@/pages/Platforms";
+import Systems from "@/pages/Systems";
+import Video from "@/pages/Video";
 
 interface Route {
   path: string;
