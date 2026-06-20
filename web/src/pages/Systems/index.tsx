@@ -1,19 +1,28 @@
+import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import Button from "@/components/Button";
-import { Card, CardLabel } from "@/components/Card";
-import Notice from "@/components/Notice";
 import { Page, PageHeader, Subtitle, Title } from "@/components/Page";
-import Table from "@/components/Table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import AlertDialogDelete from "@/pages/Systems/AlertDialogDelete";
 import * as api from "@/pages/Systems/api";
-import Form from "@/pages/Systems/Form";
+import DialogCreate from "@/pages/Systems/DialogCreate";
+import DialogEdit from "@/pages/Systems/DialogEdit";
 import type { FormData, System } from "@/pages/Systems/types";
+
+const SKELETON_ROW_IDS = Array.from({ length: 5 }, () => crypto.randomUUID());
 
 export default function Systems() {
   const [systems, setSystems] = useState<System[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     api
@@ -26,17 +35,14 @@ export default function Systems() {
   const handleCreate = async (data: FormData) => {
     const created = await api.create(data);
     setSystems((prev) => [created, ...prev]);
-    setShowCreate(false);
   };
 
   const handleUpdate = async (id: number, data: FormData) => {
     const updated = await api.update(id, data);
     setSystems((prev) => prev.map((s) => (s.id === id ? updated : s)));
-    setEditingId(null);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this systems?")) return;
     await api.remove(id);
     setSystems((prev) => prev.filter((s) => s.id !== id));
   };
@@ -46,88 +52,61 @@ export default function Systems() {
       <PageHeader>
         <div>
           <Title>Systems</Title>
-          <Subtitle>{systems.length} total</Subtitle>
+          <Subtitle>{loading ? "Loading..." : `${systems.length} total`}</Subtitle>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setShowCreate(true);
-            setEditingId(null);
-          }}
-        >
-          + New System
-        </Button>
+        <DialogCreate onSubmit={handleCreate} />
       </PageHeader>
 
-      {/* States */}
-      {loading && <Notice>Loading...</Notice>}
-      {error && <Notice variant="danger">{error}</Notice>}
-
-      {/* Create Row */}
-      {showCreate && (
-        <Card>
-          <CardLabel>New System</CardLabel>
-          <Form onSubmit={handleCreate} onCancel={() => setShowCreate(false)} />
-        </Card>
+      {/* Error */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Table */}
-      {!loading && (
-        <Card>
-          {systems.length === 0 ? (
-            <p className="py-8 text-center text-gray-400">No systems yet. Create one above!</p>
-          ) : (
-            <Table
-              data={systems}
-              expandedId={editingId}
-              expanded={(system) => (
-                <Form
-                  defaultValues={{ name: system.name, description: system.description }}
-                  onSubmit={(data) => handleUpdate(system.id, data)}
-                  onCancel={() => setEditingId(null)}
-                />
-              )}
-              columns={[
-                {
-                  label: "ID",
-                  width: "60px",
-                  render: (s) => <span className="text-gray-400">#{s.id}</span>,
-                },
-                {
-                  label: "Name",
-                  width: "200px",
-                  render: (s) => <span className="font-medium">{s.name}</span>,
-                },
-                {
-                  label: "Description",
-                  render: (s) => <span className="text-gray-500">{s.description}</span>,
-                },
-                {
-                  label: "Actions",
-                  width: "160px",
-                  align: "right",
-                  render: (s) => (
-                    <div className="flex justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingId(s.id);
-                          setShowCreate(false);
-                        }}
-                      >
-                        ✏️ Edit
-                      </Button>
-                      <Button variant="danger" onClick={() => handleDelete(s.id)}>
-                        🗑 Delete
-                      </Button>
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          )}
-        </Card>
-      )}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading
+            ? SKELETON_ROW_IDS.map((key) => (
+                <TableRow key={key}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-8" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-64" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                </TableRow>
+              ))
+            : systems.map((system) => (
+                <TableRow key={system.id}>
+                  <TableCell>{system.id}</TableCell>
+                  <TableCell>{system.name}</TableCell>
+                  <TableCell>{system.description}</TableCell>
+                  <TableCell className="flex flex-row" onClick={(e) => e.stopPropagation()}>
+                    <DialogEdit system={system} onSubmit={handleUpdate} />
+                    <AlertDialogDelete system={system} onCancel={handleDelete} />
+                  </TableCell>
+                </TableRow>
+              ))}
+        </TableBody>
+      </Table>
     </Page>
   );
 }

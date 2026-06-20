@@ -1,15 +1,14 @@
-import type { ReactNode } from "react";
-import Sidebar from "./Sidebar";
+import { Outlet } from "react-router";
+import AppSidebar from "@/components/layout/AppSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
-interface Props {
-  children: ReactNode;
-}
-
-export default function MainLayout({ children }: Props) {
+export default function MainLayout() {
   return (
-    <div className="flex h-screen font-sans">
-      <Sidebar />
-      <main className="flex-1 bg-gray-50 p-6 overflow-auto">{children}</main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <main className="flex-1 overflow-y-auto">
+        <Outlet />
+      </main>
+    </SidebarProvider>
   );
 }
