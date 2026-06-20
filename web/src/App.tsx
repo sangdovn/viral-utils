@@ -5,13 +5,13 @@ import { routes } from "./routes";
 export default function App() {
   return (
     <BrowserRouter>
-      <MainLayout>
-        <Routes>
-          {routes.map((route) => (
-            <Route key={route.path} path={route.path} element={route.element} />
+      <Routes>
+        <Route element={<MainLayout />}>
+          {routes.map(({ path, element }) => (
+            <Route key={path} path={path} element={element} />
           ))}
-        </Routes>
-      </MainLayout>
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
