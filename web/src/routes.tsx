@@ -10,7 +10,6 @@ interface Route {
   label: string;
   element: JSX.Element;
 }
-
 export const routes: Route[] = [
   { path: "/", label: "Home", element: <Home /> },
   { path: "/systems", label: "Systems", element: <Systems /> },
