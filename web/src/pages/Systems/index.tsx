@@ -1,6 +1,6 @@
 import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Page, PageHeader, Subtitle, Title } from "@/components/Page";
+import { Page, PageHeader, PageSubtitle, PageTitle } from "@/components/Page";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -51,8 +51,8 @@ export default function Systems() {
     <Page>
       <PageHeader>
         <div>
-          <Title>Systems</Title>
-          <Subtitle>{loading ? "Loading..." : `${systems.length} total`}</Subtitle>
+          <PageTitle>Systems</PageTitle>
+          <PageSubtitle>{loading ? "Loading..." : `${systems.length} total`}</PageSubtitle>
         </div>
         <DialogCreate onSubmit={handleCreate} />
       </PageHeader>

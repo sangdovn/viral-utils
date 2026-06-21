@@ -27,7 +27,7 @@ export default function AlertDialogDelete({ system, onCancel }: Props) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete System</AlertDialogTitle>
+          <AlertDialogTitle>Delete System {system.name}</AlertDialogTitle>
           <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

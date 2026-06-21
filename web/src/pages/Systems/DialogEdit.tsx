@@ -1,15 +1,5 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
+import DialogForm from "@/components/DialogForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { FormData, System } from "@/pages/Systems/types";
@@ -20,7 +10,6 @@ interface Props {
 }
 
 export default function DialogEdit({ system, onSubmit }: Props) {
-  const [open, setOpen] = useState(false);
   const [inputs, setInputs] = useState({
     name: system.name,
     description: system.description,
@@ -29,6 +18,10 @@ export default function DialogEdit({ system, onSubmit }: Props) {
     name: "",
     description: "",
   });
+
+  useEffect(() => {
+    setInputs({ name: system.name, description: system.description });
+  }, [system]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -44,63 +37,35 @@ export default function DialogEdit({ system, onSubmit }: Props) {
     return !e.name && !e.description;
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const handleSubmit = () => {
+    if (!validate()) return false;
     onSubmit(system.id, inputs);
-    setOpen(false);
+    return true;
   };
 
-  const handleOpenChange = (state: boolean) => {
-    setOpen(state);
-    if (state === false) return;
-    setInputs({ name: system.name, description: system.description });
+  const handleClose = () => {
     setErrors({ name: "", description: "" });
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          Edit
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Edit System</DialogTitle>
-            <DialogDescription>Update the details below.</DialogDescription>
-          </DialogHeader>
-          <FieldGroup>
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input
-                name="name"
-                value={inputs.name}
-                onChange={handleInputChange}
-                placeholder="Name"
-              />
-              {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
-            </Field>
-            <Field>
-              <FieldLabel>Description</FieldLabel>
-              <Input
-                name="description"
-                value={inputs.description}
-                onChange={handleInputChange}
-                placeholder="Description"
-              />
-              {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
-            </Field>
-          </FieldGroup>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button type="submit">Save changes</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <DialogForm triggerText="Edit" title="Edit" onSubmit={handleSubmit} onClose={handleClose}>
+      <FieldGroup>
+        <Field>
+          <FieldLabel>Name</FieldLabel>
+          <Input name="name" value={inputs.name} onChange={handleInputChange} placeholder="Name" />
+          {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+        </Field>
+        <Field>
+          <FieldLabel>Description</FieldLabel>
+          <Input
+            name="description"
+            value={inputs.description}
+            onChange={handleInputChange}
+            placeholder="Description"
+          />
+          {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+        </Field>
+      </FieldGroup>
+    </DialogForm>
   );
 }
