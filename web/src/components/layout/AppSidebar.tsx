@@ -15,7 +15,7 @@ export default function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar collapsible="none" className="border-r">
+    <Sidebar collapsible="none" className="border-r h-dvh w-48">
       <SidebarHeader className="px-4 py-5">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -33,7 +33,7 @@ export default function AppSidebar() {
                 <SidebarMenuItem key={path}>
                   <SidebarMenuButton
                     asChild
-                    className="h-11"
+                    className="h-16"
                     isActive={path === "/" ? pathname === "/" : pathname.startsWith(path)}
                   >
                     <NavLink to={path} end>

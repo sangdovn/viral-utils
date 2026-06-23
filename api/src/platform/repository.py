@@ -1,15 +1,17 @@
 from aiosqlite import Connection
 
 from src.platform.queries import (
+    DELETE_PLATFORM_BY_ID,
     INSERT_PLATFORM,
     SELECT_PLATFORM_BY_ID,
+    SELECT_PLATFORMS,
     UPDATE_PLATFORM_BY_ID,
 )
 from src.platform.schemas import Platform, PlatformCreate, PlatformUpdate
 
 
 async def select_platforms(db: Connection) -> list[Platform]:
-    cur = await db.execute(INSERT_PLATFORM)
+    cur = await db.execute(SELECT_PLATFORMS)
     rows = await cur.fetchall()
     return [Platform.model_validate(dict(row)) for row in rows]
 
@@ -46,6 +48,6 @@ async def delete_platform_by_id(platform_id: int, db: Connection) -> bool:
     if not existing:
         return False
 
-    await db.execute(UPDATE_PLATFORM_BY_ID, {"id": platform_id})
+    await db.execute(DELETE_PLATFORM_BY_ID, {"id": platform_id})
     await db.commit()
     return True
