@@ -74,4 +74,3 @@ async def delete_system(system_id: int, db: DbConnection) -> None:
     except Exception as e:
         logger.exception(e)
         raise
-

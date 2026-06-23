@@ -4,7 +4,14 @@ from fastapi import APIRouter, HTTPException
 
 from src.database import DbConnection
 from src.platform import repository as repo
-from src.platform.schemas import PlatformCreate, PlatformResponse, PlatformUpdate
+from src.platform.schemas import (
+    PlatformCreate,
+    PlatformResponse,
+    PlatformStatus,
+    PlatformType,
+    PlatformUpdate,
+)
+from src.system import repository as system_repo
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +21,16 @@ router = APIRouter(prefix="/platforms")
 @router.get("/")
 async def list_platforms(db: DbConnection) -> list[PlatformResponse]:
     platforms = await repo.select_platforms(db=db)
-    return [PlatformResponse.model_validate(s) for s in platforms]
+    systems = await system_repo.select_systems(db=db)
+    systems_by_id = {s.id: s for s in systems}
 
-
-@router.get("/{platform_id}")
-async def get_platform(platform_id: int, db: DbConnection) -> PlatformResponse:
-    platform = await repo.select_platform_by_id(platform_id=platform_id, db=db)
-    if not platform:
-        raise HTTPException(status_code=404, detail="Platform not found")
-
-    return PlatformResponse.model_validate(platform)
+    return [
+        PlatformResponse(
+            **p.model_dump(exclude={"system_id"}),
+            system=systems_by_id.get(p.system_id) if p.system_id else None,
+        )
+        for p in platforms
+    ]
 
 
 @router.post("/")
@@ -31,13 +38,40 @@ async def create_platform(
     platform: PlatformCreate, db: DbConnection
 ) -> PlatformResponse:
     try:
+        systems = await system_repo.select_systems(db=db)
+        system_by_id = {s.id: s for s in systems}
         created = await repo.insert_platform(platform=platform, db=db)
         if not created:
             raise HTTPException(status_code=500, detail="Failed to create platform")
+        return PlatformResponse(
+            **created.model_dump(),
+            system=system_by_id.get(created.system_id) if created.system_id else None,
+        )
     except Exception as e:
-        logger.exception("Failed to create platform - %e", e)
+        logger.exception(e)
+        raise
 
-    return PlatformResponse.model_validate(created)
+
+@router.get("/types")
+async def list_types():
+    return list(PlatformType)
+
+
+@router.get("/statuses")
+async def list_statuses():
+    return list(PlatformStatus)
+
+
+@router.get("/{platform_id}")
+async def get_platform(platform_id: int, db: DbConnection) -> PlatformResponse:
+    try:
+        platform = await repo.select_platform_by_id(platform_id=platform_id, db=db)
+        if not platform:
+            raise HTTPException(status_code=404, detail="Platform not found")
+        return PlatformResponse.model_validate(platform.model_dump())
+    except Exception as e:
+        logger.exception(e)
+        raise
 
 
 @router.put("/{platform_id}")
@@ -45,6 +79,8 @@ async def update_platform(
     platform_id: int, platform: PlatformUpdate, db: DbConnection
 ) -> PlatformResponse:
     try:
+        systems = await system_repo.select_systems(db=db)
+        system_by_id = {s.id: s for s in systems}
         updated = await repo.update_platform_by_id(
             platform_id=platform_id,
             platform=platform,
@@ -52,10 +88,13 @@ async def update_platform(
         )
         if not updated:
             raise HTTPException(status_code=500, detail="Failed to update platform")
+        return PlatformResponse(
+            **updated.model_dump(),
+            system=system_by_id.get(updated.system_id) if updated.system_id else None,
+        )
     except Exception as e:
-        logger.exception("Failed to update platform - %e", e)
-
-    return PlatformResponse.model_validate(updated)
+        logger.exception(e)
+        raise
 
 
 @router.delete("/{platform_id}", status_code=204)
@@ -64,8 +103,6 @@ async def delete_platform(platform_id: int, db: DbConnection) -> None:
         deleted = await repo.delete_platform_by_id(platform_id=platform_id, db=db)
         if not deleted:
             raise HTTPException(status_code=404, detail="Platform not found")
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.exception("Failed to delete platform - %s", e)
-        raise HTTPException(status_code=500, detail="Failed to delete platform") from e
+        logger.exception(e)
+        raise

@@ -6,9 +6,10 @@ from fastapi.responses import JSONResponse
 
 from src.database import init_db
 from src.douyin.router import router as douyin_router
-from src.system.router import router as system_router
 from src.exceptions import AppException
 from src.logging import setup_logging
+from src.platform.router import router as platforms_router
+from src.system.router import router as systems_router
 from src.video.router import router as video_router
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ async def unhandled_error_handler(request: Request, error: Exception) -> JSONRes
 
 
 # routes
-app.include_router(video_router)
+app.include_router(systems_router)
+app.include_router(platforms_router)
 app.include_router(douyin_router)
-app.include_router(system_router)
+app.include_router(video_router)

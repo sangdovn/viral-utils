@@ -1,10 +1,9 @@
-export type System = {
+export interface System {
   id: number;
   name: string;
   description: string;
-};
+}
 
-export type FormData = {
-  name: string;
-  description: string;
-};
+export interface SystemCreate extends Omit<System, "id"> {}
+
+export interface SystemEdit extends Omit<System, "id"> {}

@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
+from src.system.schemas import System
+
 
 class PlatformType(StrEnum):
     FACEBOOK = "facebook"
@@ -16,22 +18,32 @@ class PlatformStatus(StrEnum):
     BANNED = "banned"
 
 
-class PlatformBase(BaseModel):
-    type: PlatformType
-    name: str
-    url: str | None = None
-    status: PlatformStatus
+# class PlatformBase(BaseModel):
+#     type: PlatformType
+#     name: str
+#     url: str | None = None
+#     status: PlatformStatus
+#     reason: str | None = None
 
 
 class Platform(BaseModel):
     id: int
+    type: PlatformType
+    name: str
+    url: str | None = None
+    status: PlatformStatus
+    reason: str | None = None
     system_id: int | None = None
     created_at: int
     updated_at: int
 
 
-class PlatformCreate(PlatformBase):
-    pass
+class PlatformCreate(BaseModel):
+    type: PlatformType
+    name: str
+    url: str | None = None
+    status: PlatformStatus
+    reason: str | None = None
 
 
 class PlatformUpdate(BaseModel):
@@ -39,8 +51,15 @@ class PlatformUpdate(BaseModel):
     name: str
     url: str | None = None
     status: PlatformStatus
-
-
-class PlatformResponse(PlatformBase):
-    id: int
+    reason: str | None = None
     system_id: int | None = None
+
+
+class PlatformResponse(BaseModel):
+    id: int
+    type: PlatformType
+    name: str
+    url: str | None = None
+    status: PlatformStatus
+    reason: str | None = None
+    system: System | None = None

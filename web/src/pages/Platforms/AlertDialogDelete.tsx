@@ -10,14 +10,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import type { System } from "@/pages/Systems/types";
+import type { Platform } from "@/pages/Platforms/types";
 
 interface Props {
-  system: System;
+  platform: Platform;
   onCancel: (id: number) => void;
 }
 
-export default function AlertDialogDelete({ system, onCancel }: Props) {
+export default function AlertDialogDelete({ platform, onCancel }: Props) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -27,12 +27,12 @@ export default function AlertDialogDelete({ system, onCancel }: Props) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete System {system.name}</AlertDialogTitle>
+          <AlertDialogTitle>Delete Platform {platform.name}</AlertDialogTitle>
           <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onCancel(system.id)}>Delete</AlertDialogAction>
+          <AlertDialogAction onClick={() => onCancel(platform.id)}>Delete</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
