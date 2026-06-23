@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import DialogForm from "@/components/DialogForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { FormData, System } from "@/pages/Systems/types";
+import type { System, SystemEdit } from "@/pages/Systems/types";
 
 interface Props {
   system: System;
-  onSubmit: (id: number, data: FormData) => void;
+  onSubmit: (id: number, data: SystemEdit) => void;
 }
 
 export default function DialogEdit({ system, onSubmit }: Props) {
@@ -30,15 +30,16 @@ export default function DialogEdit({ system, onSubmit }: Props) {
     setInputs((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validate = () => {
+  const isValidFormData = () => {
     const e = { name: "", description: "" };
     if (inputs.name.trim().length < 2) e.name = "At least 2 characters";
     setErrors(e);
-    return !e.name && !e.description;
+    if (Object.values(e).some(Boolean)) return false;
+    return true;
   };
 
   const handleSubmit = () => {
-    if (!validate()) return false;
+    if (!isValidFormData()) return false;
     onSubmit(system.id, inputs);
     return true;
   };

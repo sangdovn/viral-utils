@@ -2,10 +2,10 @@ import { useState } from "react";
 import DialogForm from "@/components/DialogForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { FormData } from "@/pages/Systems/types";
+import type { SystemCreate } from "@/pages/Systems/types";
 
 interface Props {
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: SystemCreate) => void;
 }
 
 const DEFAULT_VALUES = {
@@ -24,15 +24,16 @@ export default function DialogCreate({ onSubmit }: Props) {
     setInputs((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validate = () => {
+  const isValidFormData = () => {
     const e = { name: "", description: "" };
     if (inputs.name.trim().length < 2) e.name = "At least 2 characters";
     setErrors(e);
-    return !e.name && !e.description;
+    if (Object.values(e).some(Boolean)) return false;
+    return true;
   };
 
   const handleSubmit = () => {
-    if (!validate()) return false;
+    if (!isValidFormData()) return false;
     onSubmit(inputs);
     return true;
   };
