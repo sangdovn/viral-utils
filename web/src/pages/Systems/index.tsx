@@ -1,6 +1,6 @@
 import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Page, PageHeader, Subtitle, Title } from "@/components/Page";
+import { Page, PageHeader, PageSubtitle, PageTitle } from "@/components/Page";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,7 +15,7 @@ import AlertDialogDelete from "@/pages/Systems/AlertDialogDelete";
 import * as api from "@/pages/Systems/api";
 import DialogCreate from "@/pages/Systems/DialogCreate";
 import DialogEdit from "@/pages/Systems/DialogEdit";
-import type { FormData, System } from "@/pages/Systems/types";
+import type { System, SystemEdit } from "@/pages/Systems/types";
 
 const SKELETON_ROW_IDS = Array.from({ length: 5 }, () => crypto.randomUUID());
 
@@ -32,12 +32,12 @@ export default function Systems() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleCreate = async (data: FormData) => {
+  const handleCreate = async (data: SystemEdit) => {
     const created = await api.create(data);
     setSystems((prev) => [created, ...prev]);
   };
 
-  const handleUpdate = async (id: number, data: FormData) => {
+  const handleUpdate = async (id: number, data: SystemEdit) => {
     const updated = await api.update(id, data);
     setSystems((prev) => prev.map((s) => (s.id === id ? updated : s)));
   };
@@ -51,8 +51,8 @@ export default function Systems() {
     <Page>
       <PageHeader>
         <div>
-          <Title>Systems</Title>
-          <Subtitle>{loading ? "Loading..." : `${systems.length} total`}</Subtitle>
+          <PageTitle>Systems</PageTitle>
+          <PageSubtitle>{loading ? "Loading..." : `${systems.length} total`}</PageSubtitle>
         </div>
         <DialogCreate onSubmit={handleCreate} />
       </PageHeader>
