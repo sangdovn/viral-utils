@@ -41,8 +41,8 @@ export default function DialogForm({
 
   const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
-    const submitted = onSubmit();
-    if (submitted) handleOpenChange(false);
+    const submit_ok = onSubmit();
+    if (submit_ok) handleOpenChange(false);
   };
 
   return (
