@@ -25,6 +25,7 @@ export default function Platforms() {
   const [systems, setSystems] = useState<System[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mutationError, setMutationError] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -44,19 +45,42 @@ export default function Platforms() {
   }, []);
 
   const handleCreate = async (data: PlatformCreate) => {
-    const created = await platform_api.create(data);
-    setPlatforms((prev) => [created, ...prev]);
+    setMutationError("");
+    try {
+      const created = await platform_api.create(data);
+      setPlatforms((prev) => [created, ...prev]);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Could not create platform";
+      setMutationError(message);
+      throw new Error(message);
+    }
   };
 
   const handleUpdate = async (id: number, data: PlatformUpdate) => {
-    const updated = await platform_api.update(id, data);
-    setPlatforms((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    setMutationError("");
+    try {
+      const updated = await platform_api.update(id, data);
+      setPlatforms((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Could not update platform";
+      setMutationError(message);
+      throw new Error(message);
+    }
   };
 
   const handleDelete = async (id: number) => {
-    await platform_api.remove(id);
-    setPlatforms((prev) => prev.filter((s) => s.id !== id));
+    setMutationError("");
+    try {
+      await platform_api.remove(id);
+      setPlatforms((prev) => prev.filter((s) => s.id !== id));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Could not delete platform";
+      setMutationError(message);
+      throw new Error(message);
+    }
   };
+
+  const displayError = error || mutationError;
 
   return (
     <Page>
@@ -68,61 +92,71 @@ export default function Platforms() {
         <DialogCreate types={types} statuses={statuses} systems={systems} onSubmit={handleCreate} />
       </PageHeader>
 
-      {/* Error */}
-      {error && (
+      {displayError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{displayError}</AlertDescription>
         </Alert>
       )}
 
-      {/* Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Url</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Reason</TableHead>
-            <TableHead>System</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center">
-                Loading...
-              </TableCell>
+              <TableHead>ID</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>System</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ) : (
-            platforms.map((platform) => (
-              <TableRow key={platform.id}>
-                <TableCell>{platform.id}</TableCell>
-                <TableCell>{platform.type}</TableCell>
-                <TableCell>{platform.name}</TableCell>
-                <TableCell>{platform.url}</TableCell>
-                <TableCell>{platform.status}</TableCell>
-                <TableCell>{platform.reason}</TableCell>
-                <TableCell>{platform.system?.name}</TableCell>
-                <TableCell className="flex flex-row" onClick={(e) => e.stopPropagation()}>
-                  <DialogEdit
-                    platform={platform}
-                    types={types}
-                    statuses={statuses}
-                    systems={systems}
-                    onSubmit={handleUpdate}
-                  />
-                  <AlertDialogDelete platform={platform} onCancel={handleDelete} />
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  Loading...
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : platforms.length ? (
+              platforms.map((platform) => (
+                <TableRow key={platform.id}>
+                  <TableCell>{platform.id}</TableCell>
+                  <TableCell>{platform.type}</TableCell>
+                  <TableCell className="font-medium">{platform.name}</TableCell>
+                  <TableCell className="max-w-64 truncate text-muted-foreground">
+                    {platform.url || "No URL"}
+                  </TableCell>
+                  <TableCell>{platform.status}</TableCell>
+                  <TableCell className="max-w-72 truncate text-muted-foreground">
+                    {platform.reason || "No reason"}
+                  </TableCell>
+                  <TableCell>{platform.system?.name || "No system"}</TableCell>
+                  <TableCell className="flex flex-row gap-2" onClick={(e) => e.stopPropagation()}>
+                    <DialogEdit
+                      platform={platform}
+                      types={types}
+                      statuses={statuses}
+                      systems={systems}
+                      onSubmit={handleUpdate}
+                    />
+                    <AlertDialogDelete platform={platform} onDelete={handleDelete} />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  No platforms
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </Page>
   );
 }

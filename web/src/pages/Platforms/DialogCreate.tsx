@@ -19,8 +19,10 @@ interface Props {
   types: string[];
   statuses: string[];
   systems: System[];
-  onSubmit: (data: PlatformCreate) => void;
+  onSubmit: (data: PlatformCreate) => void | Promise<void>;
 }
+
+const NO_SYSTEM_VALUE = "__none__";
 
 const DEFAULT_INPUTS = {
   type: "",
@@ -28,7 +30,7 @@ const DEFAULT_INPUTS = {
   url: "",
   status: "",
   reason: "",
-  system_id: "",
+  system_id: NO_SYSTEM_VALUE,
 };
 
 const DEFAULT_ERRORS = {
@@ -63,15 +65,20 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
     return true;
   };
 
-  const handleSubmit = () => {
+  const optionalString = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  };
+
+  const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    onSubmit({
+    await onSubmit({
       type: inputs.type as PlatformType,
-      name: inputs.name,
-      url: inputs.url,
+      name: inputs.name.trim(),
+      url: optionalString(inputs.url),
       status: inputs.status as PlatformStatus,
-      reason: inputs.reason,
-      system_id: inputs.system_id ? Number(inputs.system_id) : undefined,
+      reason: optionalString(inputs.reason),
+      system_id: inputs.system_id === NO_SYSTEM_VALUE ? null : Number(inputs.system_id),
     });
     return true;
   };
@@ -161,7 +168,7 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
         <Field>
           <FieldLabel>System</FieldLabel>
           <Select
-            value={inputs.system_id !== null ? String(inputs.system_id) : ""}
+            value={inputs.system_id}
             onValueChange={(value) => handleSelectChange("system_id", value)}
           >
             <SelectTrigger>
@@ -170,6 +177,7 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
             <SelectContent position="popper">
               <SelectGroup>
                 <SelectLabel>Systems</SelectLabel>
+                <SelectItem value={NO_SYSTEM_VALUE}>No system</SelectItem>
                 {systems.map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>
                     {s.name}

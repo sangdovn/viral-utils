@@ -13,8 +13,13 @@ export interface Platform {
   system: System | null;
 }
 
-export interface PlatformCreate extends Omit<Platform, "id" | "system"> {
-  system_id?: number | null;
+export interface PlatformCreate {
+  type: PlatformType;
+  name: string;
+  url: string | null;
+  status: PlatformStatus;
+  reason: string | null;
+  system_id: number | null;
 }
 
-export interface PlatformUpdate extends PlatformCreate {}
+export type PlatformUpdate = PlatformCreate;

@@ -26,22 +26,24 @@ const DEFAULT_ERRORS = {
   status: "",
 };
 
+const NO_SYSTEM_VALUE = "__none__";
+
 interface Props {
   platform: Platform;
   types: string[];
   statuses: string[];
   systems: System[];
-  onSubmit: (id: number, data: PlatformUpdate) => void;
+  onSubmit: (id: number, data: PlatformUpdate) => void | Promise<void>;
 }
 
 export default function DialogEdit({ systems, types, statuses, platform, onSubmit }: Props) {
   const [inputs, setInputs] = useState({
     type: platform.type,
     name: platform.name,
-    url: platform.url,
+    url: platform.url ?? "",
     status: platform.status,
-    reason: platform.reason,
-    system_id: platform.system?.id,
+    reason: platform.reason ?? "",
+    system_id: platform.system?.id ? String(platform.system.id) : NO_SYSTEM_VALUE,
   });
   const [errors, setErrors] = useState(DEFAULT_ERRORS);
 
@@ -49,10 +51,10 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
     setInputs({
       type: platform.type,
       name: platform.name,
-      url: platform.url,
+      url: platform.url ?? "",
       status: platform.status,
-      reason: platform.reason,
-      system_id: platform.system?.id,
+      reason: platform.reason ?? "",
+      system_id: platform.system?.id ? String(platform.system.id) : NO_SYSTEM_VALUE,
     });
   }, [platform]);
 
@@ -77,15 +79,20 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
     return true;
   };
 
-  const handleSubmit = () => {
+  const optionalString = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  };
+
+  const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    onSubmit(platform.id, {
+    await onSubmit(platform.id, {
       type: inputs.type as PlatformType,
-      name: inputs.name,
-      url: inputs.url,
+      name: inputs.name.trim(),
+      url: optionalString(inputs.url),
       status: inputs.status as PlatformStatus,
-      reason: inputs.reason,
-      system_id: inputs.system_id ? Number(inputs.system_id) : undefined,
+      reason: optionalString(inputs.reason),
+      system_id: inputs.system_id === NO_SYSTEM_VALUE ? null : Number(inputs.system_id),
     });
     return true;
   };
@@ -127,9 +134,9 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
           <FieldLabel>URL</FieldLabel>
           <Input
             name="url"
-            value={inputs.url ?? ""}
+            value={inputs.url}
             onChange={handleInputChange}
-            placeholder="Name"
+            placeholder="https://"
           />
         </Field>
 
@@ -144,7 +151,7 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectGroup>
-                <SelectLabel>Types</SelectLabel>
+                <SelectLabel>Statuses</SelectLabel>
                 {statuses.map((t) => (
                   <SelectItem key={t} value={t}>
                     {t}
@@ -160,7 +167,7 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
           <FieldLabel>Reason</FieldLabel>
           <Textarea
             name="reason"
-            value={inputs.reason ?? ""}
+            value={inputs.reason}
             onChange={handleInputChange}
             placeholder="Reason"
           />
@@ -169,7 +176,7 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
         <Field>
           <FieldLabel>System</FieldLabel>
           <Select
-            value={inputs.system_id !== null ? String(inputs.system_id) : ""}
+            value={inputs.system_id}
             onValueChange={(value) => handleSelectChange("system_id", value)}
           >
             <SelectTrigger>
@@ -178,6 +185,7 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
             <SelectContent position="popper">
               <SelectGroup>
                 <SelectLabel>Systems</SelectLabel>
+                <SelectItem value={NO_SYSTEM_VALUE}>No system</SelectItem>
                 {systems.map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>
                     {s.name}
@@ -186,7 +194,6 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
               </SelectGroup>
             </SelectContent>
           </Select>
-          {errors.type && <p className="text-xs text-red-500">{errors.type}</p>}
         </Field>
       </FieldGroup>
     </DialogForm>
