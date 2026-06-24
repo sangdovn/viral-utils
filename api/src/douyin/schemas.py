@@ -54,7 +54,7 @@ class User(UserBase):
 
 class UserResponse(UserBase):
     id: int
-    system_id: int
+    system_id: int | None = None
 
 
 class VideoBase(BaseModel):
