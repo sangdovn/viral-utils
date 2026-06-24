@@ -6,13 +6,13 @@ import type { System, SystemEdit } from "@/pages/Systems/types";
 
 interface Props {
   system: System;
-  onSubmit: (id: number, data: SystemEdit) => void;
+  onSubmit: (id: number, data: SystemEdit) => void | Promise<void>;
 }
 
 export default function DialogEdit({ system, onSubmit }: Props) {
   const [inputs, setInputs] = useState({
     name: system.name,
-    description: system.description,
+    description: system.description ?? "",
   });
   const [errors, setErrors] = useState({
     name: "",
@@ -20,7 +20,7 @@ export default function DialogEdit({ system, onSubmit }: Props) {
   });
 
   useEffect(() => {
-    setInputs({ name: system.name, description: system.description });
+    setInputs({ name: system.name, description: system.description ?? "" });
   }, [system]);
 
   const handleInputChange = (
@@ -38,9 +38,12 @@ export default function DialogEdit({ system, onSubmit }: Props) {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    onSubmit(system.id, inputs);
+    await onSubmit(system.id, {
+      name: inputs.name.trim(),
+      description: inputs.description.trim() || null,
+    });
     return true;
   };
 

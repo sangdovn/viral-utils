@@ -24,8 +24,8 @@ export default function Platforms() {
   const [statuses, setStatuses] = useState<string[]>([]);
   const [systems, setSystems] = useState<System[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [mutationError, setMutationError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -40,47 +40,47 @@ export default function Platforms() {
         setTypes(types);
         setStatuses(statuses);
       })
-      .catch(() => setError("Could not load platforms"))
+      .catch(() => setLoadError("Could not load platforms"))
       .finally(() => setLoading(false));
   }, []);
 
   const handleCreate = async (data: PlatformCreate) => {
-    setMutationError("");
+    setActionError("");
     try {
       const created = await platform_api.create(data);
       setPlatforms((prev) => [created, ...prev]);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Could not create platform";
-      setMutationError(message);
+      setActionError(message);
       throw new Error(message);
     }
   };
 
   const handleUpdate = async (id: number, data: PlatformUpdate) => {
-    setMutationError("");
+    setActionError("");
     try {
       const updated = await platform_api.update(id, data);
       setPlatforms((prev) => prev.map((s) => (s.id === id ? updated : s)));
     } catch (e) {
       const message = e instanceof Error ? e.message : "Could not update platform";
-      setMutationError(message);
+      setActionError(message);
       throw new Error(message);
     }
   };
 
   const handleDelete = async (id: number) => {
-    setMutationError("");
+    setActionError("");
     try {
       await platform_api.remove(id);
       setPlatforms((prev) => prev.filter((s) => s.id !== id));
     } catch (e) {
       const message = e instanceof Error ? e.message : "Could not delete platform";
-      setMutationError(message);
+      setActionError(message);
       throw new Error(message);
     }
   };
 
-  const displayError = error || mutationError;
+  const displayError = loadError || actionError;
 
   return (
     <Page>

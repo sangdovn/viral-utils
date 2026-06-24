@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import type { SystemCreate } from "@/pages/Systems/types";
 
 interface Props {
-  onSubmit: (data: SystemCreate) => void;
+  onSubmit: (data: SystemCreate) => void | Promise<void>;
 }
 
 const DEFAULT_VALUES = {
@@ -32,9 +32,12 @@ export default function DialogCreate({ onSubmit }: Props) {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    onSubmit(inputs);
+    await onSubmit({
+      name: inputs.name.trim(),
+      description: inputs.description.trim() || null,
+    });
     return true;
   };
 
