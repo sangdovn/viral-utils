@@ -1,6 +1,6 @@
 export const apiUrl = import.meta.env.VITE_API_URL;
 
-export async function apiFetch(path: string, options?: RequestInit) {
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!apiUrl) throw new Error("Missing VITE_API_URL");
 
   const res = await fetch(`${apiUrl}${path}`, options);
@@ -14,6 +14,6 @@ export async function apiFetch(path: string, options?: RequestInit) {
     }
     throw new Error(`Request failed: ${res.status} ${path}${detail ? ` - ${detail}` : ""}`);
   }
-  if (res.status === 204) return null;
-  return res.json();
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
 }
