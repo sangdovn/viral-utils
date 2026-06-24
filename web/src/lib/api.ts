@@ -1,8 +1,19 @@
 export const apiUrl = import.meta.env.VITE_API_URL;
 
 export async function apiFetch(path: string, options?: RequestInit) {
+  if (!apiUrl) throw new Error("Missing VITE_API_URL");
+
   const res = await fetch(`${apiUrl}${path}`, options);
-  if (!res.ok) throw new Error(`Request failed: ${path}`);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      detail = body.detail ?? JSON.stringify(body);
+    } catch {
+      detail = await res.text();
+    }
+    throw new Error(`Request failed: ${res.status} ${path}${detail ? ` - ${detail}` : ""}`);
+  }
   if (res.status === 204) return null;
   return res.json();
 }
