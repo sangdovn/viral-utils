@@ -68,7 +68,7 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
   };
 
   const isValidFormData = () => {
-    const e = DEFAULT_ERRORS;
+    const e = { ...DEFAULT_ERRORS };
     if (!inputs.type) e.type = "Required";
     if (inputs.name.trim().length < 2) e.name = "At least 2 characters";
     if (!inputs.status) e.status = "Required";
@@ -125,7 +125,12 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
 
         <Field>
           <FieldLabel>URL</FieldLabel>
-          <Input name="url" value={inputs.url} onChange={handleInputChange} placeholder="Name" />
+          <Input
+            name="url"
+            value={inputs.url ?? ""}
+            onChange={handleInputChange}
+            placeholder="Name"
+          />
         </Field>
 
         <Field>
@@ -155,7 +160,7 @@ export default function DialogEdit({ systems, types, statuses, platform, onSubmi
           <FieldLabel>Reason</FieldLabel>
           <Textarea
             name="reason"
-            value={inputs.reason}
+            value={inputs.reason ?? ""}
             onChange={handleInputChange}
             placeholder="Reason"
           />
