@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "bunx --bun vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "biome check src index.html vite.config.ts",
+    "format": "biome format --write src index.html vite.config.ts",
+    "check": "bun run build && bun run lint",
     "preview": "vite preview"
   },
   "dependencies": {
