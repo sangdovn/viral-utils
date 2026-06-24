@@ -5,13 +5,12 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 
-from src.video.engine import VideoEngineProtocol
-
 from src.config import get_settings
 from src.ocr.engine import OcrEngine
 from src.ocr.schemas import OcrConfig
 from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle.schemas import Subtitle
+from src.video.engine import VideoEngineProtocol
 
 logger = logging.getLogger(__name__)
 
