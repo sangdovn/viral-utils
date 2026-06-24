@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from src.config import ensure_app_dirs, settings
 from src.database import init_db
 from src.douyin.router import router as douyin_router
 from src.exceptions import AppException
@@ -18,6 +19,7 @@ setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ensure_app_dirs(settings)
     await init_db()
     logger.info("Application started")
     yield
