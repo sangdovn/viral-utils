@@ -38,14 +38,21 @@ async def create_platform(
     platform: PlatformCreate, db: DbConnection
 ) -> PlatformResponse:
     try:
-        systems = await system_repo.select_systems(db=db)
-        system_by_id = {s.id: s for s in systems}
+        system = None
+        if platform.system_id is not None:
+            system = await system_repo.select_system_by_id(
+                system_id=platform.system_id,
+                db=db,
+            )
+            if not system:
+                raise HTTPException(status_code=404, detail="System not found")
+
         created = await repo.insert_platform(platform=platform, db=db)
         if not created:
             raise HTTPException(status_code=500, detail="Failed to create platform")
         return PlatformResponse(
             **created.model_dump(),
-            system=system_by_id.get(created.system_id) if created.system_id else None,
+            system=system,
         )
     except Exception as e:
         logger.exception(e)
@@ -87,7 +94,7 @@ async def update_platform(
             db=db,
         )
         if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update platform")
+            raise HTTPException(status_code=404, detail="Platform not found")
         return PlatformResponse(
             **updated.model_dump(),
             system=system_by_id.get(updated.system_id) if updated.system_id else None,
