@@ -13,7 +13,7 @@ class PlatformType(StrEnum):
 
 class PlatformStatus(StrEnum):
     ACTIVE = "active"
-    RESTRICTRED = "restricted"
+    RESTRICTED = "restricted"
     SUSPENDED = "suspended"
     BANNED = "banned"
 
@@ -44,6 +44,7 @@ class PlatformCreate(BaseModel):
     url: str | None = None
     status: PlatformStatus
     reason: str | None = None
+    system_id: int | None = None
 
 
 class PlatformUpdate(BaseModel):
