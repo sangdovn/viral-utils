@@ -156,12 +156,13 @@ async def fetch_user_latest_videos(
     sec_uid: str,
     tikhub: TikHubClient,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    for attempt in range(3):
+    response = None
+    for attempt in range(1, 4):
         try:
             response = await tikhub.fetch_user_post_videos(sec_uid=sec_uid)
             break
         except TikHubError:
-            logger.exception("Failed to fetch user - retries=%d", attempt)
+            logger.exception("Failed to fetch user - attempt=%d", attempt)
             continue
         except Exception:
             raise
