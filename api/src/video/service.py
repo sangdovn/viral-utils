@@ -3,10 +3,6 @@ import threading
 from collections.abc import Generator
 from pathlib import Path
 
-from src.video.constants import ALLOWED_EXTENSIONS
-from src.video.engine import VideoEngineProtocol
-from src.video.schemas import ProcessVideosRequest
-
 from src.inpainting import service as inpaint_service
 from src.inpainting.engine import InpaintEngineProtocol
 from src.inpainting.schemas import InpaintConfig
@@ -17,6 +13,9 @@ from src.ocr.schemas import OcrConfig
 from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle import service as subtitle_service
 from src.subtitle.schemas import SubtitleConfig
+from src.video.constants import ALLOWED_EXTENSIONS
+from src.video.engine import VideoEngineProtocol
+from src.video.schemas import ProcessVideosRequest
 
 logger = logging.getLogger(__name__)
 
