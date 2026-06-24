@@ -37,7 +37,7 @@ async def create_user_videos(
         yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
 
 
-@router.get("/fetch_latest_videos")
+@router.get("/fetch_latest_videos", response_class=EventSourceResponse)
 async def fetch_latest_videos(
     db: DbConnection,
     tikhub: TikHubClientDep,
@@ -53,7 +53,7 @@ async def fetch_latest_videos(
         yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
 
 
-@router.get("/download_latest_videos")
+@router.get("/download_latest_videos", response_class=EventSourceResponse)
 async def download_latest_videos(db: DbConnection):
     try:
         async for event in service.download_latest_videos(db=db):
@@ -66,7 +66,7 @@ async def download_latest_videos(db: DbConnection):
         yield SSEEvent(status=EventStatus.FAILED, message="Unexpected error")
 
 
-@router.get("/fetch_and_download_latest_videos")
+@router.get("/fetch_and_download_latest_videos", response_class=EventSourceResponse)
 async def fetch_and_download_latest_videos(db: DbConnection, tikhub: TikHubClientDep):
     try:
         async for event in service.fetch_latest_videos(db=db, tikhub=tikhub):
