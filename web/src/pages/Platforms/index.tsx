@@ -23,20 +23,24 @@ export default function Platforms() {
   const [types, setTypes] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [systems, setSystems] = useState<System[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     Promise.all([
-      platform_api
-        .getAll()
-        .then(setPlatforms)
-        .catch(() => setError("Could not load platforms"))
-        .finally(() => setLoading(false)),
-      system_api.getAll().then(setSystems),
-      platform_api.getTypes().then(setTypes),
-      platform_api.getStatuses().then(setStatuses),
-    ]);
+      platform_api.getAll(),
+      system_api.getAll(),
+      platform_api.getTypes(),
+      platform_api.getStatuses(),
+    ])
+      .then(([platforms, systems, types, statuses]) => {
+        setPlatforms(platforms);
+        setSystems(systems);
+        setTypes(types);
+        setStatuses(statuses);
+      })
+      .catch(() => setError("Could not load platforms"))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleCreate = async (data: PlatformCreate) => {
@@ -46,7 +50,6 @@ export default function Platforms() {
 
   const handleUpdate = async (id: number, data: PlatformUpdate) => {
     const updated = await platform_api.update(id, data);
-    console.log(updated);
     setPlatforms((prev) => prev.map((s) => (s.id === id ? updated : s)));
   };
 
