@@ -35,6 +35,9 @@ def process(
     out_dir = Path(request.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     files = [f for f in in_dir.glob("*") if f.suffix in ALLOWED_EXTENSIONS]
+    if not files:
+        yield SSEEvent(status=EventStatus.COMPLETED, message="No videos to process")
+        return
 
     for f in files:
         yield SSEEvent(status=EventStatus.PROCESSING, message=f"Processing {f.name}")
@@ -101,5 +104,7 @@ def process(
         # --- Move video to trash after process ---
         yield SSEEvent(status=EventStatus.PROCESSING, message="Delete original video")
 
-    yield SSEEvent(status=EventStatus.COMPLETED, message=str(f))
+    yield SSEEvent(
+        status=EventStatus.COMPLETED, message="Completed processing all videos"
+    )
     logger.info("Completed processing all videos")

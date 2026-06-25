@@ -3,26 +3,20 @@ import shutil
 import threading
 from collections.abc import Generator
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi.sse import EventSourceResponse
 
 from src.config import settings
-from src.inpainting.engine import InpaintEngineProtocol
-from src.inpainting.schemas import InpaintConfig
-from src.ocr.engine import OcrEngine
-from src.ocr.schemas import OcrConfig
 from src.shared.schemas import SSEEvent
-from src.subtitle.schemas import SubtitleConfig
 from src.video import service
 from src.video.dependencies import (
-    get_inpaint_config,
-    get_inpaint_engine,
-    get_ocr_config,
-    get_ocr_engine,
-    get_subtitle_config,
-    get_video_engine,
+    InpaintConfigDep,
+    InpaintEngineDep,
+    OcrConfigDep,
+    OcrEngineDep,
+    SubtitleConfigDep,
+    VideoEngineDep,
 )
-from src.video.engine import VideoEngineProtocol
 from src.video.schemas import ProcessVideosRequest
 
 logger = logging.getLogger(__name__)
@@ -35,12 +29,12 @@ _cancel = threading.Event()
 @router.post(path="/process/stream", response_class=EventSourceResponse)
 def process_stream(
     request: ProcessVideosRequest,
-    video_engine: VideoEngineProtocol = Depends(get_video_engine),
-    ocr_engine: OcrEngine = Depends(get_ocr_engine),
-    ocr_config: OcrConfig = Depends(get_ocr_config),
-    subtitle_config: SubtitleConfig = Depends(get_subtitle_config),
-    inpaint_engine: InpaintEngineProtocol = Depends(get_inpaint_engine),
-    inpaint_config: InpaintConfig = Depends(get_inpaint_config),
+    video_engine: VideoEngineDep,
+    ocr_engine: OcrEngineDep,
+    ocr_config: OcrConfigDep,
+    subtitle_config: SubtitleConfigDep,
+    inpaint_engine: InpaintEngineDep,
+    inpaint_config: InpaintConfigDep,
 ) -> Generator[SSEEvent]:
     _cancel.clear()
     yield from service.process(
@@ -59,12 +53,12 @@ def process_stream(
 @router.post(path="/process/stream/test", response_class=EventSourceResponse)
 def process_stream_test(
     request: ProcessVideosRequest,
-    video_engine: VideoEngineProtocol = Depends(get_video_engine),
-    ocr_engine: OcrEngine = Depends(get_ocr_engine),
-    ocr_config: OcrConfig = Depends(get_ocr_config),
-    subtitle_config: SubtitleConfig = Depends(get_subtitle_config),
-    inpaint_engine: InpaintEngineProtocol = Depends(get_inpaint_engine),
-    inpaint_config: InpaintConfig = Depends(get_inpaint_config),
+    video_engine: VideoEngineDep,
+    ocr_engine: OcrEngineDep,
+    ocr_config: OcrConfigDep,
+    subtitle_config: SubtitleConfigDep,
+    inpaint_engine: InpaintEngineDep,
+    inpaint_config: InpaintConfigDep,
 ) -> Generator[SSEEvent]:
     _cancel.clear()
     request.in_dir = request.in_dir + "/test"
