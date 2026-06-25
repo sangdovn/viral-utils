@@ -112,3 +112,23 @@ class Video(BaseModel):
     user_id: int
     created_at: int
     updated_at: int
+
+
+class VideoResponse(BaseModel):
+    id: int
+    aweme_id: str
+    title: str | None = None
+    translated_title: str | None = None
+    create_time: int
+    digg_count: int
+    duration: int | None = None
+    urls: str | None = None
+    is_downloaded: bool = False
+    user_id: int
+
+
+class VideoPage(BaseModel):
+    items: list[VideoResponse]
+    total: int
+    limit: int
+    offset: int
