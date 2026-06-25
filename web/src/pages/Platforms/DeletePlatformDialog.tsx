@@ -20,7 +20,7 @@ interface Props {
   onDelete: (id: number) => void | Promise<void>;
 }
 
-export default function AlertDialogDelete({ platform, onDelete }: Props) {
+export default function DeletePlatformDialog({ platform, onDelete }: Props) {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");

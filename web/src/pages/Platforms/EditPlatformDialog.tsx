@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DialogForm from "@/components/DialogForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -12,37 +12,57 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { PlatformCreate, PlatformStatus, PlatformType } from "@/pages/Platforms/types";
+import type {
+  Platform,
+  PlatformStatus,
+  PlatformType,
+  PlatformUpdate,
+} from "@/pages/Platforms/types";
 import type { System } from "@/pages/Systems/types";
-
-interface Props {
-  types: string[];
-  statuses: string[];
-  systems: System[];
-  onSubmit: (data: PlatformCreate) => void | Promise<void>;
-}
-
-const NO_SYSTEM_VALUE = "__none__";
-
-const DEFAULT_INPUTS = {
-  type: "",
-  name: "",
-  url: "",
-  status: "",
-  reason: "",
-  system_id: NO_SYSTEM_VALUE,
-};
 
 const DEFAULT_ERRORS = {
   type: "",
   name: "",
   status: "",
-  reason: "",
 };
 
-export default function DialogCreate({ types, statuses, systems, onSubmit }: Props) {
-  const [inputs, setInputs] = useState(DEFAULT_INPUTS);
+const NO_SYSTEM_VALUE = "__none__";
+
+interface Props {
+  platform: Platform;
+  types: string[];
+  statuses: string[];
+  systems: System[];
+  onSubmit: (id: number, data: PlatformUpdate) => void | Promise<void>;
+}
+
+export default function EditPlatformDialog({
+  systems,
+  types,
+  statuses,
+  platform,
+  onSubmit,
+}: Props) {
+  const [inputs, setInputs] = useState({
+    type: platform.type,
+    name: platform.name,
+    url: platform.url ?? "",
+    status: platform.status,
+    reason: platform.reason ?? "",
+    system_id: platform.system?.id ? String(platform.system.id) : NO_SYSTEM_VALUE,
+  });
   const [errors, setErrors] = useState(DEFAULT_ERRORS);
+
+  useEffect(() => {
+    setInputs({
+      type: platform.type,
+      name: platform.name,
+      url: platform.url ?? "",
+      status: platform.status,
+      reason: platform.reason ?? "",
+      system_id: platform.system?.id ? String(platform.system.id) : NO_SYSTEM_VALUE,
+    });
+  }, [platform]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -72,7 +92,7 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
 
   const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    await onSubmit({
+    await onSubmit(platform.id, {
       type: inputs.type as PlatformType,
       name: inputs.name.trim(),
       url: optionalString(inputs.url),
@@ -84,17 +104,11 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
   };
 
   const handleClose = () => {
-    setInputs(DEFAULT_INPUTS);
     setErrors(DEFAULT_ERRORS);
   };
 
   return (
-    <DialogForm
-      triggerText="+ New Platform"
-      title="New Platform"
-      onSubmit={handleSubmit}
-      onClose={handleClose}
-    >
+    <DialogForm triggerText="Edit" title="Edit" onSubmit={handleSubmit} onClose={handleClose}>
       <FieldGroup>
         <Field>
           <FieldLabel>Type</FieldLabel>
@@ -106,7 +120,7 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
               <SelectGroup>
                 <SelectLabel>Types</SelectLabel>
                 {types.map((t) => (
-                  <SelectItem key={t} value={String(t)}>
+                  <SelectItem key={t} value={t}>
                     {t}
                   </SelectItem>
                 ))}
@@ -144,9 +158,9 @@ export default function DialogCreate({ types, statuses, systems, onSubmit }: Pro
             <SelectContent position="popper">
               <SelectGroup>
                 <SelectLabel>Statuses</SelectLabel>
-                {statuses.map((s) => (
-                  <SelectItem key={s} value={String(s)}>
-                    {s}
+                {statuses.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
                   </SelectItem>
                 ))}
               </SelectGroup>
