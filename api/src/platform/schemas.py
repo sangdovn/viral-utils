@@ -40,10 +40,10 @@ class PlatformCreate(BaseModel):
 
 
 class PlatformUpdate(BaseModel):
-    type: PlatformType
-    name: str
+    type: PlatformType | None = None
+    name: str | None = None
     url: str | None = None
-    status: PlatformStatus
+    status: PlatformStatus | None = None
     reason: str | None = None
     system_id: int | None = None
 
