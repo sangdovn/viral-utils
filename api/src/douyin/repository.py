@@ -22,7 +22,6 @@ from src.douyin.queries import (
 )
 from src.douyin.schemas import (
     User,
-    UserBase,
     UserCreate,
     UserUpdate,
     Video,
@@ -81,7 +80,7 @@ async def update_user_by_id(
     return updated
 
 
-async def upsert_user(user: UserBase, db: Connection) -> User | None:
+async def upsert_user(user: UserCreate, db: Connection) -> User | None:
     await db.execute(UPSERT_USER, user.model_dump())
     await db.commit()
     return await select_user_by_sec_uid(sec_uid=user.sec_uid, db=db)

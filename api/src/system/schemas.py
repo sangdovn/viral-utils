@@ -1,24 +1,25 @@
 from pydantic import BaseModel
 
 
-class SystemBase(BaseModel):
+class System(BaseModel):
+    id: int
     name: str
     description: str | None = None
-
-
-class System(SystemBase):
-    id: int
     created_at: int
     updated_at: int
 
 
-class SystemCreate(SystemBase):
-    pass
+class SystemCreate(BaseModel):
+    name: str
+    description: str | None = None
 
 
-class SystemUpdate(SystemBase):
-    pass
+class SystemUpdate(BaseModel):
+    name: str
+    description: str | None = None
 
 
-class SystemResponse(SystemBase):
+class SystemResponse(BaseModel):
     id: int
+    name: str
+    description: str | None = None

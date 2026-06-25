@@ -18,14 +18,6 @@ class PlatformStatus(StrEnum):
     BANNED = "banned"
 
 
-# class PlatformBase(BaseModel):
-#     type: PlatformType
-#     name: str
-#     url: str | None = None
-#     status: PlatformStatus
-#     reason: str | None = None
-
-
 class Platform(BaseModel):
     id: int
     type: PlatformType
