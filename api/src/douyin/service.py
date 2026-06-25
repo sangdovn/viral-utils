@@ -29,7 +29,7 @@ from src.douyin.schemas import (
 from src.download import service as download_service
 from src.shared.schemas import EventStatus, SSEEvent
 from src.tikhub.client import TikHubClient
-from src.tikhub.exceptions import TikHubError
+from src.tikhub.exceptions import TikHubError, TikHubStatusError
 from src.tikhub.schemas import AwemeItem
 from src.translation import service as translate_service
 
@@ -161,6 +161,12 @@ async def fetch_user_latest_videos(
         try:
             response = await tikhub.fetch_user_post_videos(sec_uid=sec_uid)
             break
+        except TikHubStatusError as e:
+            if e.upstream_status_code and 400 <= e.upstream_status_code < 500:
+                logger.warning("TikHub rejected user fetch - sec_uid=%s - %s", sec_uid, e)
+                break
+            logger.exception("Failed to fetch user - attempt=%d", attempt)
+            continue
         except TikHubError:
             logger.exception("Failed to fetch user - attempt=%d", attempt)
             continue
