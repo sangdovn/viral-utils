@@ -13,7 +13,8 @@ INSERT INTO users (
     sub_niche,
     micro_niche,
     note,
-    last_fetched
+    last_fetched,
+    system_id
 )
 VALUES (
     :sec_uid,
@@ -25,7 +26,8 @@ VALUES (
     :sub_niche,
     :micro_niche,
     :note,
-    :last_fetched
+    :last_fetched,
+    :system_id
 )
 """
 
@@ -40,7 +42,8 @@ INSERT INTO users (
     sub_niche,
     micro_niche,
     note,
-    last_fetched
+    last_fetched,
+    system_id
 )
 VALUES (
     :sec_uid,
@@ -52,7 +55,8 @@ VALUES (
     :sub_niche,
     :micro_niche,
     :note,
-    :last_fetched
+    :last_fetched,
+    :system_id
 )
 ON CONFLICT (sec_uid)
 DO UPDATE SET
@@ -64,7 +68,8 @@ DO UPDATE SET
     sub_niche = EXCLUDED.sub_niche,
     micro_niche = EXCLUDED.micro_niche,
     note = EXCLUDED.note,
-    last_fetched = EXCLUDED.last_fetched
+    last_fetched = EXCLUDED.last_fetched,
+    system_id = EXCLUDED.system_id
 """
 
 SELECT_USERS = "SELECT * FROM users"
@@ -100,7 +105,8 @@ SET
     sub_niche = :sub_niche,
     micro_niche = :micro_niche,
     note = :note,
-    last_fetched = :last_fetched
+    last_fetched = :last_fetched,
+    system_id = :system_id
 WHERE id = :id
 """
 
