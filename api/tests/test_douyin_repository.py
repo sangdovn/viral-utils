@@ -4,12 +4,13 @@ from pathlib import Path
 import aiosqlite
 
 from src.douyin.repository import (
+    insert_user,
     insert_video,
     select_users_to_fetch,
     select_videos_to_download,
     update_video_by_id,
 )
-from src.douyin.schemas import VideoCreate, VideoUpdate
+from src.douyin.schemas import UserCreate, VideoCreate, VideoUpdate
 
 SCHEMA_DIR = Path(__file__).resolve().parents[1] / "migrations" / "schemas"
 
@@ -64,6 +65,36 @@ def test_select_users_to_fetch_filters_by_status_and_last_fetched(tmp_path):
                 "active-old",
                 "testing-never",
             }
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_insert_user_persists_system_id(tmp_path):
+    async def run():
+        db = await _connect_db(tmp_path)
+        try:
+            await db.execute(
+                "INSERT INTO systems (name, description) VALUES (:name, :description)",
+                {"name": "System A", "description": None},
+            )
+            await db.commit()
+            system_id = (await (await db.execute("SELECT id FROM systems")).fetchone())[
+                "id"
+            ]
+
+            user = await insert_user(
+                UserCreate(
+                    sec_uid="user-with-system",
+                    status="active",
+                    system_id=system_id,
+                ),
+                db,
+            )
+
+            assert user is not None
+            assert user.system_id == system_id
         finally:
             await db.close()
 
