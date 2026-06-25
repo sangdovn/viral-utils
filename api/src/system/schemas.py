@@ -15,7 +15,7 @@ class SystemCreate(BaseModel):
 
 
 class SystemUpdate(BaseModel):
-    name: str
+    name: str | None = None
     description: str | None = None
 
 
