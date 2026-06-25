@@ -110,6 +110,8 @@ SET
 WHERE id = :id
 """
 
+DELETE_USER_BY_ID = "DELETE FROM users WHERE id = :id"
+
 
 # ==============================================================================
 # VIDEO
@@ -177,6 +179,15 @@ DO UPDATE SET
 
 SELECT_VIDEOS = "SELECT * FROM videos"
 
+COUNT_VIDEOS = "SELECT COUNT(*) AS total FROM videos"
+
+SELECT_VIDEOS_PAGE = """
+SELECT *
+FROM videos
+ORDER BY create_time DESC, id DESC
+LIMIT :limit OFFSET :offset
+"""
+
 SELECT_VIDEOS_TO_DOWNLOAD = """
 SELECT v.* FROM videos v
 INNER JOIN users u ON v.user_id = u.id
@@ -211,3 +222,5 @@ SET
     is_downloaded = :is_downloaded
 WHERE id = :id
 """
+
+DELETE_VIDEO_BY_ID = "DELETE FROM videos WHERE id = :id"
