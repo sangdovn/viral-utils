@@ -7,8 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import DeleteSystemDialog from "@/pages/Systems/DeleteSystemDialog";
-import EditSystemDialog from "@/pages/Systems/EditSystemDialog";
+import DeleteSystemDialog from "@/pages/Systems/components/DeleteSystemDialog";
+import EditSystemDialog from "@/pages/Systems/components/EditSystemDialog";
 import type { System, SystemEdit } from "@/pages/Systems/types";
 
 const SKELETON_ROW_IDS = Array.from({ length: 5 }, () => crypto.randomUUID());

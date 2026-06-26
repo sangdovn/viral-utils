@@ -2,9 +2,9 @@ import { AlertCircle } from "lucide-react";
 import { Page, PageHeader, PageSubtitle, PageTitle, PageToolbar } from "@/components/Page";
 import SearchInput from "@/components/SearchInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import CreateSystemDialog from "@/pages/Systems/CreateSystemDialog";
-import SystemsTable from "@/pages/Systems/SystemsTable";
-import useSystemsPage from "@/pages/Systems/useSystemsPage";
+import CreateSystemDialog from "@/pages/Systems/components/CreateSystemDialog";
+import SystemsTable from "@/pages/Systems/components/SystemsTable";
+import useSystemsPage from "@/pages/Systems/hooks/useSystemsPage";
 
 export default function Systems() {
   const {
