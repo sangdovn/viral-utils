@@ -2,9 +2,9 @@ import { AlertCircle } from "lucide-react";
 import { Page, PageHeader, PageSubtitle, PageTitle, PageToolbar } from "@/components/Page";
 import SearchInput from "@/components/SearchInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import CreatePlatformDialog from "@/pages/Platforms/CreatePlatformDialog";
-import PlatformsTable from "@/pages/Platforms/PlatformsTable";
-import usePlatformsPage from "@/pages/Platforms/usePlatformsPage";
+import CreatePlatformDialog from "@/pages/Platforms/components/CreatePlatformDialog";
+import PlatformsTable from "@/pages/Platforms/components/PlatformsTable";
+import usePlatformsPage from "@/pages/Platforms/hooks/usePlatformsPage";
 
 export default function Platforms() {
   const {

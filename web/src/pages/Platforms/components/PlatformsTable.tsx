@@ -6,8 +6,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import DeletePlatformDialog from "@/pages/Platforms/DeletePlatformDialog";
-import EditPlatformDialog from "@/pages/Platforms/EditPlatformDialog";
+import DeletePlatformDialog from "@/pages/Platforms/components/DeletePlatformDialog";
+import EditPlatformDialog from "@/pages/Platforms/components/EditPlatformDialog";
 import type { Platform, PlatformUpdate } from "@/pages/Platforms/types";
 import type { System } from "@/pages/Systems/types";
 
