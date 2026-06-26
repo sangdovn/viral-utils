@@ -56,7 +56,7 @@ export default function SystemsTable({ systems, loading, onUpdate, onDelete }: S
                 <TableCell>{system.id}</TableCell>
                 <TableCell className="font-medium">{system.name}</TableCell>
                 <TableCell className="max-w-md truncate text-muted-foreground">
-                  {system.description || "No description"}
+                  {system.description}
                 </TableCell>
                 <TableCell className="flex flex-row gap-2" onClick={(e) => e.stopPropagation()}>
                   <EditSystemDialog system={system} onSubmit={onUpdate} />
