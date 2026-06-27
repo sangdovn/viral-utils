@@ -1,4 +1,6 @@
-from fastapi import HTTPException
+from typing import Annotated
+
+from fastapi import Depends, HTTPException
 
 from src.inpainting.engine import InpaintEngineProtocol
 from src.inpainting.engines.opencv import OpenCV
@@ -84,3 +86,11 @@ def get_inpaint_config(request: ProcessVideosRequest) -> InpaintConfig:
         radius=request.inpaint_radius,
         delay=request.inpaint_delay,
     )
+
+
+VideoEngineDep = Annotated[VideoEngineProtocol, Depends(get_video_engine)]
+OcrEngineDep = Annotated[OcrEngine, Depends(get_ocr_engine)]
+OcrConfigDep = Annotated[OcrConfig, Depends(get_ocr_config)]
+SubtitleConfigDep = Annotated[SubtitleConfig, Depends(get_subtitle_config)]
+InpaintEngineDep = Annotated[InpaintEngineProtocol, Depends(get_inpaint_engine)]
+InpaintConfigDep = Annotated[InpaintConfig, Depends(get_inpaint_config)]

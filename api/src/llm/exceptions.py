@@ -17,8 +17,11 @@ class EmptyResponseError(AppException):
     """Provider returned a result but content was None/empty."""
 
 
-class LLMAllModelsFailed(AppException):
+class LLMAllModelsFailedError(AppException):
     """All rotation models are failed to complete."""
+
+    def __init__(self, message: str = "All LLM models failed"):
+        super().__init__(message, status_code=502)
 
 
 def normalize_error(e: Exception) -> AppException:
@@ -33,5 +36,5 @@ def normalize_error(e: Exception) -> AppException:
     else:
         error = LLMError(msg)
 
-    error.__cause__ = e  # manually atach the chain
+    error.__cause__ = e  # manually attach the chain
     return error

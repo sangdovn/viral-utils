@@ -29,7 +29,7 @@ from src.douyin.schemas import (
 from src.download import service as download_service
 from src.shared.schemas import EventStatus, SSEEvent
 from src.tikhub.client import TikHubClient
-from src.tikhub.exceptions import TikHubError
+from src.tikhub.exceptions import TikHubError, TikHubStatusError
 from src.tikhub.schemas import AwemeItem
 from src.translation import service as translate_service
 
@@ -88,6 +88,14 @@ async def _translate_video_titles(
     return list(
         await asyncio.gather(*[_translate_text(video["title"]) for video in videos])
     )
+
+
+def _display_user_name(user: User) -> str:
+    return user.translated_name or user.name or user.sec_uid
+
+
+def _display_video_title(video: Video) -> str:
+    return video.translated_title or video.title or video.aweme_id
 
 
 # ==============================================================================
@@ -156,12 +164,21 @@ async def fetch_user_latest_videos(
     sec_uid: str,
     tikhub: TikHubClient,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    for attempt in range(3):
+    response = None
+    for attempt in range(1, 4):
         try:
             response = await tikhub.fetch_user_post_videos(sec_uid=sec_uid)
             break
+        except TikHubStatusError as e:
+            if e.upstream_status_code and 400 <= e.upstream_status_code < 500:
+                logger.warning(
+                    "TikHub rejected user fetch - sec_uid=%s - %s", sec_uid, e
+                )
+                break
+            logger.exception("Failed to fetch user - attempt=%d", attempt)
+            continue
         except TikHubError:
-            logger.exception("Failed to fetch user - retries=%d", attempt)
+            logger.exception("Failed to fetch user - attempt=%d", attempt)
             continue
         except Exception:
             raise
@@ -237,14 +254,14 @@ async def _sync_user(
     db: Connection,
 ) -> User:
     name = fetched_user["name"]
-    if not name or name == existing.name:
-        return existing
+    translated_name = existing.translated_name
+    if name and name != existing.name:
+        translated_name = await _translate_text(name)
 
-    translated_name = await _translate_text(name)
     updated = await repo.update_user_by_id(
         user_id=existing.id,
         user=UserUpdate(
-            name=name,
+            name=name or existing.name,
             translated_name=translated_name,
             last_fetched=int(datetime.now().timestamp()),
         ),
@@ -344,7 +361,7 @@ async def fetch_latest_videos(
 
         yield SSEEvent(
             status=EventStatus.PROCESSING,
-            message=f"Syncing user {i}/{total}",
+            message=f"Syncing {_display_user_name(user)} {i}/{total}",
             progress=int((i / total) * 100),
         )
 
@@ -361,6 +378,46 @@ async def fetch_latest_videos(
         )
 
     yield SSEEvent(status=EventStatus.COMPLETED, message="Done", progress=100)
+
+
+async def fetch_user_videos(
+    user_id: int,
+    db: Connection,
+    tikhub: TikHubClient,
+) -> AsyncGenerator[SSEEvent]:
+    existing = await repo.select_user_by_id(user_id=user_id, db=db)
+    if not existing:
+        raise UserNotFoundError()
+
+    yield SSEEvent(
+        status=EventStatus.STARTED,
+        message=f"Fetching {_display_user_name(existing)}",
+        progress=0,
+    )
+
+    fetched_user, fetched_videos = await fetch_user_latest_videos(
+        sec_uid=existing.sec_uid,
+        tikhub=tikhub,
+    )
+    if not fetched_user:
+        raise FetchUserVideosError()
+
+    yield SSEEvent(status=EventStatus.PROCESSING, message="Syncing user", progress=30)
+    synced = await _sync_user(existing=existing, fetched_user=fetched_user, db=db)
+
+    yield SSEEvent(status=EventStatus.PROCESSING, message="Syncing videos", progress=60)
+    await _sync_user_videos(
+        existing_user=synced,
+        fetched_videos=fetched_videos,
+        db=db,
+    )
+
+    yield SSEEvent(
+        status=EventStatus.COMPLETED,
+        message="Done",
+        progress=100,
+        data=UserResponse.model_validate(synced.model_dump()).model_dump(),
+    )
 
 
 async def _get_video_download_path(video: Video, db: Connection) -> Path:
@@ -473,7 +530,7 @@ async def download_latest_videos(db: Connection) -> AsyncGenerator[SSEEvent]:
 
         yield SSEEvent(
             status=EventStatus.COMPLETED if result else EventStatus.FAILED,
-            message=f"{'Downloaded' if result else 'Failed'}: {video.aweme_id}",
+            message=f"{'Downloaded' if result else 'Failed'}: {_display_video_title(video)}",
             progress=progress,
         )
 

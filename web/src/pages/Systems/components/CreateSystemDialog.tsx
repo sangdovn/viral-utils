@@ -1,27 +1,21 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import DialogForm from "@/components/DialogForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { System, SystemEdit } from "@/pages/Systems/types";
+import type { SystemCreate } from "@/pages/Systems/types";
 
 interface Props {
-  system: System;
-  onSubmit: (id: number, data: SystemEdit) => void;
+  onSubmit: (data: SystemCreate) => void | Promise<void>;
 }
 
-export default function DialogEdit({ system, onSubmit }: Props) {
-  const [inputs, setInputs] = useState({
-    name: system.name,
-    description: system.description,
-  });
-  const [errors, setErrors] = useState({
-    name: "",
-    description: "",
-  });
+const DEFAULT_VALUES = {
+  name: "",
+  description: "",
+};
 
-  useEffect(() => {
-    setInputs({ name: system.name, description: system.description });
-  }, [system]);
+export default function CreateSystemDialog({ onSubmit }: Props) {
+  const [inputs, setInputs] = useState(DEFAULT_VALUES);
+  const [errors, setErrors] = useState(DEFAULT_VALUES);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -38,18 +32,27 @@ export default function DialogEdit({ system, onSubmit }: Props) {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    onSubmit(system.id, inputs);
+    await onSubmit({
+      name: inputs.name.trim(),
+      description: inputs.description.trim() || null,
+    });
     return true;
   };
 
   const handleClose = () => {
-    setErrors({ name: "", description: "" });
+    setInputs(DEFAULT_VALUES);
+    setErrors(DEFAULT_VALUES);
   };
 
   return (
-    <DialogForm triggerText="Edit" title="Edit" onSubmit={handleSubmit} onClose={handleClose}>
+    <DialogForm
+      triggerText="+ New System"
+      title="Systems"
+      onSubmit={handleSubmit}
+      onClose={handleClose}
+    >
       <FieldGroup>
         <Field>
           <FieldLabel>Name</FieldLabel>

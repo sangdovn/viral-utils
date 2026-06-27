@@ -6,7 +6,11 @@ import httpx
 from pydantic import ValidationError
 
 from src.rate_limit.bucket import TokenBucket
-from src.tikhub.constants import DEFAULT_HEADERS, TIKHUB_BASE_URL
+from src.tikhub.constants import (
+    DEFAULT_HEADERS,
+    DEFAULT_USER_POST_VIDEO_COUNT,
+    TIKHUB_BASE_URL,
+)
 from src.tikhub.exceptions import (
     TikHubRequestError,
     TikHubStatusError,
@@ -15,7 +19,6 @@ from src.tikhub.exceptions import (
 from src.tikhub.schemas import UserPostVideosResponse
 
 logger = logging.getLogger(__name__)
-
 
 class TikHubClient:
     def __init__(self):
@@ -34,7 +37,8 @@ class TikHubClient:
         self,
         sec_uid: str,
         max_cursor: int = 0,
-        count: int = 999,
+        count: int = DEFAULT_USER_POST_VIDEO_COUNT,
+        sort_type: int = 0,
     ) -> UserPostVideosResponse:
         url = TIKHUB_BASE_URL + "/fetch_user_post_videos"
         headers = DEFAULT_HEADERS
@@ -42,6 +46,7 @@ class TikHubClient:
             "sec_user_id": sec_uid,
             "max_cursor": max_cursor,
             "count": count,
+            "sort_type": sort_type,
         }
 
         try:
@@ -51,8 +56,12 @@ class TikHubClient:
                 res.raise_for_status()
                 return UserPostVideosResponse.model_validate(res.json())
         except httpx.HTTPStatusError as e:
-            logger.exception(e)
-            raise TikHubStatusError() from e
+            detail = e.response.text
+            logger.exception("TikHub status error - detail=%s", detail)
+            raise TikHubStatusError(
+                message=f"TikHub returned {e.response.status_code}: {detail}",
+                upstream_status_code=e.response.status_code,
+            ) from e
         except httpx.RequestError as e:
             logger.exception(e)
             raise TikHubRequestError() from e
@@ -67,12 +76,14 @@ class TikHubClient:
         sec_user_ids: list[str],
         max_cursor: int,
         count: int,
+        sort_type: int = 0,
     ) -> list[UserPostVideosResponse]:
         tasks = [
             self.fetch_user_post_videos(
                 sec_uid=id,
                 max_cursor=max_cursor,
                 count=count,
+                sort_type=sort_type,
             )
             for id in sec_user_ids
         ]

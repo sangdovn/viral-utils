@@ -1,21 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DialogForm from "@/components/DialogForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { SystemCreate } from "@/pages/Systems/types";
+import type { System, SystemEdit } from "@/pages/Systems/types";
 
 interface Props {
-  onSubmit: (data: SystemCreate) => void;
+  system: System;
+  onSubmit: (id: number, data: SystemEdit) => void | Promise<void>;
 }
 
-const DEFAULT_VALUES = {
-  name: "",
-  description: "",
-};
+export default function EditSystemDialog({ system, onSubmit }: Props) {
+  const [inputs, setInputs] = useState({
+    name: system.name,
+    description: system.description ?? "",
+  });
+  const [errors, setErrors] = useState({
+    name: "",
+    description: "",
+  });
 
-export default function DialogCreate({ onSubmit }: Props) {
-  const [inputs, setInputs] = useState(DEFAULT_VALUES);
-  const [errors, setErrors] = useState(DEFAULT_VALUES);
+  useEffect(() => {
+    setInputs({ name: system.name, description: system.description ?? "" });
+  }, [system]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -32,24 +38,21 @@ export default function DialogCreate({ onSubmit }: Props) {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValidFormData()) return false;
-    onSubmit(inputs);
+    await onSubmit(system.id, {
+      name: inputs.name.trim(),
+      description: inputs.description.trim() || null,
+    });
     return true;
   };
 
   const handleClose = () => {
-    setInputs(DEFAULT_VALUES);
-    setErrors(DEFAULT_VALUES);
+    setErrors({ name: "", description: "" });
   };
 
   return (
-    <DialogForm
-      triggerText="+ New System"
-      title="Systems"
-      onSubmit={handleSubmit}
-      onClose={handleClose}
-    >
+    <DialogForm triggerText="Edit" title="Edit" onSubmit={handleSubmit} onClose={handleClose}>
       <FieldGroup>
         <Field>
           <FieldLabel>Name</FieldLabel>

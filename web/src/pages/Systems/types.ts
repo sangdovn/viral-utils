@@ -1,9 +1,12 @@
 export interface System {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
 }
 
-export interface SystemCreate extends Omit<System, "id"> {}
+export interface SystemCreate {
+  name: string;
+  description: string | null;
+}
 
-export interface SystemEdit extends Omit<System, "id"> {}
+export type SystemEdit = SystemCreate;

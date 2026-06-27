@@ -3,6 +3,9 @@ import logging
 from aiosqlite import Connection
 
 from src.douyin.queries import (
+    COUNT_VIDEOS,
+    DELETE_USER_BY_ID,
+    DELETE_VIDEO_BY_ID,
     INSERT_USER,
     INSERT_VIDEO,
     SELECT_SYSTEM_NAME_BY_VIDEO_ID,
@@ -14,6 +17,7 @@ from src.douyin.queries import (
     SELECT_VIDEO_BY_ID,
     SELECT_VIDEOS,
     SELECT_VIDEOS_BY_USER_ID,
+    SELECT_VIDEOS_PAGE,
     SELECT_VIDEOS_TO_DOWNLOAD,
     UPDATE_USER_BY_ID,
     UPDATE_VIDEO_BY_ID,
@@ -22,7 +26,6 @@ from src.douyin.queries import (
 )
 from src.douyin.schemas import (
     User,
-    UserBase,
     UserCreate,
     UserUpdate,
     Video,
@@ -81,10 +84,20 @@ async def update_user_by_id(
     return updated
 
 
-async def upsert_user(user: UserBase, db: Connection) -> User | None:
+async def upsert_user(user: UserCreate, db: Connection) -> User | None:
     await db.execute(UPSERT_USER, user.model_dump())
     await db.commit()
     return await select_user_by_sec_uid(sec_uid=user.sec_uid, db=db)
+
+
+async def delete_user_by_id(user_id: int, db: Connection) -> bool:
+    existing = await select_user_by_id(user_id=user_id, db=db)
+    if not existing:
+        return False
+
+    await db.execute(DELETE_USER_BY_ID, {"id": user_id})
+    await db.commit()
+    return True
 
 
 # ==============================================================================
@@ -94,6 +107,20 @@ async def upsert_user(user: UserBase, db: Connection) -> User | None:
 
 async def select_videos(db: Connection) -> list[Video]:
     cur = await db.execute(SELECT_VIDEOS)
+    rows = await cur.fetchall()
+    return [Video.model_validate(dict(row)) for row in rows]
+
+
+async def count_videos(db: Connection) -> int:
+    cur = await db.execute(COUNT_VIDEOS)
+    row = await cur.fetchone()
+    if row is None:
+        raise RuntimeError("COUNT_VIDEOS returned no row")
+    return int(row["total"])
+
+
+async def select_videos_page(limit: int, offset: int, db: Connection) -> list[Video]:
+    cur = await db.execute(SELECT_VIDEOS_PAGE, {"limit": limit, "offset": offset})
     rows = await cur.fetchall()
     return [Video.model_validate(dict(row)) for row in rows]
 
@@ -162,3 +189,13 @@ async def update_video_by_id(
     await db.execute(UPDATE_VIDEO_BY_ID, updated.model_dump())
     await db.commit()
     return updated
+
+
+async def delete_video_by_id(video_id: int, db: Connection) -> bool:
+    existing = await select_video_by_id(video_id=video_id, db=db)
+    if not existing:
+        return False
+
+    await db.execute(DELETE_VIDEO_BY_ID, {"id": video_id})
+    await db.commit()
+    return True

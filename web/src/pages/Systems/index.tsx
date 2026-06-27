@@ -1,112 +1,62 @@
 import { AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Page, PageHeader, PageSubtitle, PageTitle } from "@/components/Page";
+import { Page, PageHeader, PageSubtitle, PageTitle, PageToolbar } from "@/components/Page";
+import SearchInput from "@/components/SearchInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import AlertDialogDelete from "@/pages/Systems/AlertDialogDelete";
-import * as api from "@/pages/Systems/api";
-import DialogCreate from "@/pages/Systems/DialogCreate";
-import DialogEdit from "@/pages/Systems/DialogEdit";
-import type { System, SystemEdit } from "@/pages/Systems/types";
-
-const SKELETON_ROW_IDS = Array.from({ length: 5 }, () => crypto.randomUUID());
+import CreateSystemDialog from "@/pages/Systems/components/CreateSystemDialog";
+import SystemsTable from "@/pages/Systems/components/SystemsTable";
+import useSystemsPage from "@/pages/Systems/hooks/useSystemsPage";
 
 export default function Systems() {
-  const [systems, setSystems] = useState<System[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api
-      .getAll()
-      .then(setSystems)
-      .catch(() => setError("Could not load systems"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleCreate = async (data: SystemEdit) => {
-    const created = await api.create(data);
-    setSystems((prev) => [created, ...prev]);
-  };
-
-  const handleUpdate = async (id: number, data: SystemEdit) => {
-    const updated = await api.update(id, data);
-    setSystems((prev) => prev.map((s) => (s.id === id ? updated : s)));
-  };
-
-  const handleDelete = async (id: number) => {
-    await api.remove(id);
-    setSystems((prev) => prev.filter((s) => s.id !== id));
-  };
+  const {
+    displayError,
+    filteredSystems,
+    handleCreate,
+    handleDelete,
+    handleUpdate,
+    loading,
+    searchQuery,
+    setSearchQuery,
+    systems,
+  } = useSystemsPage();
+  const subtitle = loading
+    ? "Loading..."
+    : searchQuery
+      ? `${filteredSystems.length} of ${systems.length} total`
+      : `${systems.length} total`;
 
   return (
     <Page>
       <PageHeader>
         <div>
           <PageTitle>Systems</PageTitle>
-          <PageSubtitle>{loading ? "Loading..." : `${systems.length} total`}</PageSubtitle>
+          <PageSubtitle>{subtitle}</PageSubtitle>
         </div>
-        <DialogCreate onSubmit={handleCreate} />
+        <CreateSystemDialog onSubmit={handleCreate} />
       </PageHeader>
 
-      {/* Error */}
-      {error && (
+      {displayError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{displayError}</AlertDescription>
         </Alert>
       )}
 
-      {/* Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading
-            ? SKELETON_ROW_IDS.map((key) => (
-                <TableRow key={key}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-8" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-64" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-16" />
-                  </TableCell>
-                </TableRow>
-              ))
-            : systems.map((system) => (
-                <TableRow key={system.id}>
-                  <TableCell>{system.id}</TableCell>
-                  <TableCell>{system.name}</TableCell>
-                  <TableCell>{system.description}</TableCell>
-                  <TableCell className="flex flex-row" onClick={(e) => e.stopPropagation()}>
-                    <DialogEdit system={system} onSubmit={handleUpdate} />
-                    <AlertDialogDelete system={system} onCancel={handleDelete} />
-                  </TableCell>
-                </TableRow>
-              ))}
-        </TableBody>
-      </Table>
+      <PageToolbar>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search systems"
+          className="w-full"
+        />
+      </PageToolbar>
+
+      <SystemsTable
+        systems={filteredSystems}
+        loading={loading}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+      />
     </Page>
   );
 }
