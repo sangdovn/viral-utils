@@ -1,6 +1,17 @@
 dev:
 	uv run uvicorn src.main:app --host localhost --port 8000 --reload --log-level warning
 
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+
+check: lint test
+
 migrate:
 	uv run python -m migrations.drop
 	uv run python -m migrations.create

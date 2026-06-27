@@ -60,9 +60,7 @@ class Settings(BaseSettings):
     )
 
 
-def get_settings() -> Settings:
-    settings = Settings()
-
+def ensure_app_dirs(settings: Settings) -> None:
     # normal Path attributes
     for value in vars(settings).values():
         if isinstance(value, Path) and not value.suffix:
@@ -76,7 +74,9 @@ def get_settings() -> Settings:
             if isinstance(value, Path) and not value.suffix:
                 value.mkdir(parents=True, exist_ok=True)
 
-    return settings
+
+def get_settings() -> Settings:
+    return Settings()
 
 
 settings = get_settings()

@@ -7,14 +7,19 @@ export interface Platform {
   id: number;
   type: PlatformType;
   name: string;
-  url?: string;
+  url: string | null;
   status: PlatformStatus;
-  reason?: string;
-  system?: System;
+  reason: string | null;
+  system: System | null;
 }
 
-export interface PlatformCreate extends Omit<Platform, "id" | "system"> {
-  system_id?: number;
+export interface PlatformCreate {
+  type: PlatformType;
+  name: string;
+  url: string | null;
+  status: PlatformStatus;
+  reason: string | null;
+  system_id: number | null;
 }
 
-export interface PlatformUpdate extends PlatformCreate {}
+export type PlatformUpdate = PlatformCreate;

@@ -19,6 +19,8 @@ select = [
 # Ignore rules that conflict with the formatter or project preferences
 ignore = [
   "B008", # allow function calls in default arguments (e.g. Depends() in FastAPI)
+  "E501", # let the formatter handle code wrapping; allow long comments/prompts
+  "RUF001", # allow intentional non-ASCII symbols in translation prompts
 ]
 
 # Allow Ruff to automatically fix any rule that supports fixing
