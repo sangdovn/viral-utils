@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users(
     sec_uid TEXT NOT NULL UNIQUE,
     name TEXT,
     translated_name TEXT,
-    status TEXT NOT NULL DEFAULT 'inactive' CHECK (status IN ('active', 'testing', 'pending', "dropped")),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('active', 'testing', 'pending', 'dropped')),
     topic TEXT,
     niche TEXT,
     sub_niche TEXT,

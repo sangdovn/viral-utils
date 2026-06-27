@@ -7,7 +7,12 @@ class TikHubError(AppException):
 
 
 class TikHubStatusError(TikHubError):
-    def __init__(self, message: str = "TikHub returned an error response"):
+    def __init__(
+        self,
+        message: str = "TikHub returned an error response",
+        upstream_status_code: int | None = None,
+    ):
+        self.upstream_status_code = upstream_status_code
         super().__init__(message=message)
 
 

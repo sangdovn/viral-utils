@@ -13,7 +13,8 @@ INSERT INTO users (
     sub_niche,
     micro_niche,
     note,
-    last_fetched
+    last_fetched,
+    system_id
 )
 VALUES (
     :sec_uid,
@@ -25,7 +26,8 @@ VALUES (
     :sub_niche,
     :micro_niche,
     :note,
-    :last_fetched
+    :last_fetched,
+    :system_id
 )
 """
 
@@ -40,7 +42,8 @@ INSERT INTO users (
     sub_niche,
     micro_niche,
     note,
-    last_fetched
+    last_fetched,
+    system_id
 )
 VALUES (
     :sec_uid,
@@ -52,7 +55,8 @@ VALUES (
     :sub_niche,
     :micro_niche,
     :note,
-    :last_fetched
+    :last_fetched,
+    :system_id
 )
 ON CONFLICT (sec_uid)
 DO UPDATE SET
@@ -64,7 +68,8 @@ DO UPDATE SET
     sub_niche = EXCLUDED.sub_niche,
     micro_niche = EXCLUDED.micro_niche,
     note = EXCLUDED.note,
-    last_fetched = EXCLUDED.last_fetched
+    last_fetched = EXCLUDED.last_fetched,
+    system_id = EXCLUDED.system_id
 """
 
 SELECT_USERS = "SELECT * FROM users"
@@ -73,13 +78,14 @@ SELECT_USERS_TO_FETCH = """
 SELECT *
 FROM users
 WHERE (
-    status == 'active'
+    status = 'active'
     AND (
         last_fetched IS NULL
         OR last_fetched < unixepoch('now', 'start of day')
     )
+)
 OR (
-    status == 'testing'
+    status = 'testing'
     AND last_fetched IS NULL
 )
 """
@@ -99,9 +105,12 @@ SET
     sub_niche = :sub_niche,
     micro_niche = :micro_niche,
     note = :note,
-    last_fetched = :last_fetched
+    last_fetched = :last_fetched,
+    system_id = :system_id
 WHERE id = :id
 """
+
+DELETE_USER_BY_ID = "DELETE FROM users WHERE id = :id"
 
 
 # ==============================================================================
@@ -170,8 +179,17 @@ DO UPDATE SET
 
 SELECT_VIDEOS = "SELECT * FROM videos"
 
+COUNT_VIDEOS = "SELECT COUNT(*) AS total FROM videos"
+
+SELECT_VIDEOS_PAGE = """
+SELECT *
+FROM videos
+ORDER BY create_time DESC, id DESC
+LIMIT :limit OFFSET :offset
+"""
+
 SELECT_VIDEOS_TO_DOWNLOAD = """
-SELECT * FROM videos v
+SELECT v.* FROM videos v
 INNER JOIN users u ON v.user_id = u.id
 WHERE u.status IN ('active', 'testing')
 AND v.is_downloaded = 0
@@ -198,6 +216,11 @@ UPDATE videos
 SET
     title = :title,
     translated_title = :translated_title,
+    digg_count = :digg_count,
+    duration = :duration,
+    urls = :urls,
     is_downloaded = :is_downloaded
 WHERE id = :id
 """
+
+DELETE_VIDEO_BY_ID = "DELETE FROM videos WHERE id = :id"

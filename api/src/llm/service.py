@@ -3,7 +3,7 @@ from typing import cast
 
 from src.config import settings
 from src.llm.constants import PROVIDER_BASE_URL, LLMProvider
-from src.llm.exceptions import LLMAllModelsFailed
+from src.llm.exceptions import LLMAllModelsFailedError
 from src.llm.provider import Provider
 from src.llm.providers.gemini import GeminiProvider
 from src.llm.providers.openai import OpenAICompatProvider
@@ -60,4 +60,4 @@ def complete(models: list[LLMModel], instruction: str, prompt: str) -> str:
             raise  # config errors - don't retry, fail fast
         except Exception as e:
             logger.warning("model %s failed: %s, trying next", model.model_id, e)
-    raise LLMAllModelsFailed()
+    raise LLMAllModelsFailedError()

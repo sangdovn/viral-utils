@@ -4,12 +4,11 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 
-from src.video.engine import VideoEngineProtocol
-
 from src.inpainting.engine import InpaintEngineProtocol
 from src.inpainting.schemas import InpaintConfig
 from src.shared.schemas import EventStatus, SSEEvent
 from src.subtitle.schemas import Subtitle
+from src.video.engine import VideoEngineProtocol
 
 logger = logging.getLogger(__name__)
 

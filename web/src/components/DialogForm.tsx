@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { AlertCircle, LoaderCircle } from "lucide-react";
+import { type ReactNode, type SubmitEvent, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,14 +13,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+type SubmitResult = boolean | undefined;
+
 interface Props {
-  triggerText: string;
-  title: string;
+  triggerText?: string;
+  title?: string;
   description?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
   cancelText?: string;
   okText?: string;
-  onSubmit: () => boolean;
+  onSubmit: () => SubmitResult | Promise<SubmitResult>;
   onClose?: () => void;
 }
 
@@ -33,16 +37,31 @@ export default function DialogForm({
   onClose,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleOpenChange = (state: boolean) => {
+    if (submitting && !state) return;
     setOpen(state);
-    if (!state) onClose?.(); // fires when dialog closes
+    if (!state) {
+      setSubmitError("");
+      onClose?.();
+    }
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
-    const submit_ok = onSubmit();
-    if (submit_ok) handleOpenChange(false);
+    setSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const submitOk = await onSubmit();
+      if (submitOk !== false) handleOpenChange(false);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Could not save changes");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -56,12 +75,23 @@ export default function DialogForm({
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
+          {submitError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
           {children}
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button variant="outline">{cancelText}</Button>
+              <Button type="button" variant="outline" disabled={submitting}>
+                {cancelText}
+              </Button>
             </DialogClose>
-            <Button type="submit">{okText}</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <LoaderCircle className="animate-spin" />}
+              {okText}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
