@@ -1,32 +1,42 @@
 [project]
-name = "viral-utils"
+name = "api"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-  "aiosqlite>=0.22.1",
-  "deep-translator>=1.11.4",
-  "fastapi[standard]>=0.136.0",
-  "google-genai>=1.70.0",
-  "numpy>=2.4.3",
-  "ocrmac>=1.0.1",
-  "openai>=2.30.0",
-  "opencv-python-headless>=4.13.0.92",
-  "paddleocr>=3.4.0",
-  "send2trash>=2.1.0",
-  "yt-dlp>=2026.6.9",
+    "alembic>=1.18.5",
+    "fastapi[standard]>=0.139.0",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "sqlalchemy>=2.0.51",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
-    "ruff>=0.14.9",
+    "pytest>=9.1.1",
+    "ruff>=0.15.22",
 ]
-
 
 [tool.fastapi]
 entrypoint = "src.main:app"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+exclude = ["alembic"]
+line-length = 88
+indent-width = 4
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
