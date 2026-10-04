@@ -1,5 +1,6 @@
 import { DataTable } from "@/components/data-table/DataTable";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import type { System } from "@/features/systems/types";
 import { useSystems } from "@/features/systems/useSystems";
 import { columns } from "@/pages/SystemsPage/columns";
 
@@ -7,12 +8,11 @@ export function SystemsPage() {
   const {
     systems,
     rowCount,
-    isRefetching,
+    isLoading,
     isLoadingError,
     isRefetchError,
     error,
     refetch,
-
     sorting,
     onSortingChange,
     search,
@@ -39,18 +39,18 @@ export function SystemsPage() {
         />
       )}
 
-      <DataTable
+      <DataTable<System>
         getRowId={(system) => system.id}
         columns={columns}
         data={systems}
         rowCount={rowCount}
+        isLoading={isLoading}
         sorting={sorting}
         onSortingChange={onSortingChange}
         search={search}
         onSearchChange={onSearchChange}
         pagination={pagination}
         onPaginationChange={onPaginationChange}
-        isRefetching={isRefetching}
       />
     </div>
   );

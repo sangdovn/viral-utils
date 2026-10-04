@@ -74,9 +74,8 @@ export function useSystems() {
   };
 
   return {
-    systems: [],
-    rowCount: 0,
-
+    systems: data?.data ?? [],
+    rowCount: data?.total ?? 0,
     isLoading,
     isFetching,
     isLoadingError,
@@ -84,13 +83,10 @@ export function useSystems() {
     isRefetching,
     error,
     refetch: () => refetch(),
-
     sorting: query.sorting,
     onSortingChange,
-
     search: searchInput,
     onSearchChange: setSearchInput,
-
     pagination: query.pagination,
     onPaginationChange,
   };
