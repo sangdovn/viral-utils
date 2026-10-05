@@ -1,26 +1,16 @@
-from collections.abc import AsyncGenerator
-from pathlib import Path
-from typing import Annotated
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from aiosqlite import Connection, Row, connect
-from fastapi import Depends
+from src.config import get_settings
+from src.schemas import Base
 
-from src.config import settings
-
-
-async def init_db():
-    async with connect(settings.db_path) as conn:
-        files = sorted(Path("migrations/schemas").glob("*.sql"))
-        for f in files:
-            await conn.executescript(f.read_text())
-        await conn.commit()  # commit once at the end
+engine = create_engine(get_settings().database_url, echo=True)
 
 
-async def get_db() -> AsyncGenerator[Connection]:
-    async with connect(settings.db_path) as conn:
-        await conn.execute("PRAGMA foreign_keys = ON")
-        conn.row_factory = Row  # returns dict-like rows
-        yield conn
+def create_db_and_tables():
+    Base.metadata.create_all(engine)
 
 
-DbConnection = Annotated[Connection, Depends(get_db)]
+def get_session():
+    with Session(engine) as session:
+        yield session
