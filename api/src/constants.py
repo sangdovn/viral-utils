@@ -1,0 +1,9 @@
+from pathlib import Path
+
+DEFAULT_APP_DIR = Path("~/Desktop/viral-utils").expanduser()
+DEFAULT_SOURCES_DIR = DEFAULT_APP_DIR / "0-sources"
+DEFAULT_RAW_DIR = DEFAULT_APP_DIR / "1-raw"
+DEFAULT_PROCESSED_DIR = DEFAULT_APP_DIR / "2-processed"
+DEFAULT_EXPORTS_DIR = DEFAULT_APP_DIR / "3-exports"
+DEFAULT_ARCHIVE_DIR = DEFAULT_APP_DIR / "4-archive"
+DEFAULT_DOWNLOADS_DIR = DEFAULT_APP_DIR / "5-downloads"

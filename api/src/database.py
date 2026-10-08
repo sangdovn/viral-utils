@@ -1,16 +1,17 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from collections.abc import AsyncGenerator
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 from src.config import get_settings
-from src.schemas import Base
 
-engine = create_engine(get_settings().database_url, echo=True)
-
-
-def create_db_and_tables():
-    Base.metadata.create_all(engine)
+engine = create_async_engine(get_settings().async_database_url)
 
 
-def get_session():
-    with Session(engine) as session:
-        yield session
+async def get_db() -> AsyncGenerator[AsyncConnection]:
+    async with engine.begin() as conn:
+        yield conn
+
+
+DB = Annotated[AsyncConnection, Depends(get_db)]
